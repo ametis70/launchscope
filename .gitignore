@@ -1,0 +1,9 @@
+.direnv/
+result
+result-*
+server/cover.out
+homeassistant/.venv/
+ui/assets/gamecontrollerdb.txt
+__pycache__/
+*.pyc
+.pytest_cache/
