@@ -1,3 +1,5 @@
+<div align="center">
+
 # launchscoped
 
 ![license](https://img.shields.io/github/license/ametis70/launchscope?style=flat-square)
@@ -6,6 +8,8 @@
 Daemon that manages the launchscope UI and app lifecycles through a REST API.
 
 <br>
+
+</div>
 
 ## Overview
 

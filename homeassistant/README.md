@@ -1,3 +1,5 @@
+<div align="center">
+
 # launchscope — Home Assistant integration
 
 ![license](https://img.shields.io/github/license/ametis70/launchscope?style=flat-square)
@@ -6,6 +8,8 @@
 Custom Home Assistant integration for controlling and monitoring [launchscoped](../server/)
 
 <br>
+
+</div>
 
 ## Installation
 

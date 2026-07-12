@@ -1,3 +1,5 @@
+<div align="center">
+
 # launchscope — Nix
 
 ![license](https://img.shields.io/github/license/ametis70/launchscope?style=flat-square)
@@ -6,6 +8,8 @@
 NixOS module, Home Manager module, packages, and development shell.
 
 <br>
+
+</div>
 
 ## Flake outputs
 

@@ -1,3 +1,5 @@
+<div align="center">
+
 # launchscope UI
 
 ![license](https://img.shields.io/github/license/ametis70/launchscope?style=flat-square)
@@ -7,13 +9,15 @@ LÖVE2D frontend for the launchscope launcher
 
 <br>
 
-<img src="docs/img/launcher.png" width="600">
-<img src="docs/img/standalone.png" width="600">
-<img src="docs/img/standalone-close.png" width="600">
-<img src="docs/img/power.png" width="600">
-<img src="docs/img/volume.png" width="600">
+| | |
+|:---:|:---:|
+| <img src="docs/img/launcher.png" width="400"> | <img src="docs/img/standalone.png" width="400"> |
+| <img src="docs/img/standalone-close.png" width="400"> | <img src="docs/img/power.png" width="400"> |
+| <img src="docs/img/volume.png" width="400"> | |
 
 <br>
+
+</div>
 
 ## Overview
 

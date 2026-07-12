@@ -1,22 +1,27 @@
+<div align="center">
+
 # launchscope
 
 ![license](https://img.shields.io/github/license/ametis70/launchscope?style=flat-square)
+![nix](https://img.shields.io/badge/nix-flake-5277C3?style=flat-square&logo=nixos&logoColor=white)
+![hacs](https://img.shields.io/badge/HACS-custom-orange?style=flat-square)
 ![go](https://img.shields.io/badge/go-1.26-00ADD8?style=flat-square&logo=go&logoColor=white)
 ![lua](https://img.shields.io/badge/lua-5.4-2C2D72?style=flat-square&logo=lua&logoColor=white)
+![python](https://img.shields.io/badge/python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)
 
-Launchscope is a HTPC launcher for Linux that takes advantage of [gamescope](https://github.com/ValveSoftware/gamescope)
-
-<br>
-
-<img src="ui/docs/img/launcher.png" width="600">
+Launchscope is an app launcher for Linux with a client/server model that takes advantage of [gamescope](https://github.com/ValveSoftware/gamescope)
 
 <br>
 
-## Overview
+<img src="ui/docs/img/home.png" width="600">
+
+<br>
+
+</div>
+
+## What's this?
 
 Think of it as a lightweight display manager tailored for a TV-connected machine. It boots straight into a menu and launches apps — each wrapped in its own gamescope session with per-app resolution, refresh rate, and upscaling settings. When an app exits, the menu comes back. No desktop environment is required, though one can be launched as just another entry (as long as it supports starting from a TTY).
-
-Typical apps: Kodi, Pegasus, Steam, Plasma, Kitty, Moonlight.
 
 Input can come from anything — TV remote via HDMI-CEC, keyboard, gamepad, or any other HID device. The CEC bridge translates remote button presses into standard uinput keyboard events so the rest of the system sees a plain keyboard.
 

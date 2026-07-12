@@ -1,11 +1,15 @@
+<div align="center">
+
 # cec-uinput
 
 ![license](https://img.shields.io/github/license/ametis70/launchscope?style=flat-square)
-![python](https://img.shields.io/badge/python-3-3776AB?style=flat-square&logo=python&logoColor=white)
+![python](https://img.shields.io/badge/python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)
 
 HDMI-CEC to uinput bridge for [Pulse-Eight USB CEC adapters](https://www.pulse-eight.com/p/104/usb-hdmi-cec-adapter)
 
 <br>
+
+</div>
 
 ## Overview
 
