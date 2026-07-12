@@ -157,6 +157,7 @@ let
     idle = {
       dim_timeout = cfg.settings.ui.idle.dim_timeout;
       blank_timeout = cfg.settings.ui.idle.blank_timeout;
+      blank_mode = cfg.settings.ui.idle.blank_mode;
     }
     // lib.optionalAttrs (cfg.settings.ui.idle.blank_off != "") {
       blank_off = cfg.settings.ui.idle.blank_off;
@@ -332,6 +333,16 @@ in
             type = lib.types.int;
             default = 0;
             description = "Seconds of inactivity before blanking the display. 0 = disabled (default).";
+          };
+          blank_mode = lib.mkOption {
+            type = lib.types.enum [ "wlopm" "cec" ];
+            default = "wlopm";
+            description = ''
+              Blank mode. "wlopm" runs the blank_off/blank_on shell commands (default).
+              "cec" sends standby/activate via the daemon's CEC API, physically powering
+              the display off rather than just blanking the output. Only valid in daemon
+              process mode.
+            '';
           };
           blank_off = lib.mkOption {
             type = lib.types.str;

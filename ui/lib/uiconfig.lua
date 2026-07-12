@@ -34,11 +34,12 @@
 --                              sharpness, hdr, adaptive_sync, force_grab,
 --                              expose_wayland, composite_debug, mangoapp, extra_flags
 --   background      table    { type, animate, color }
---   idle            table    { dim_timeout, blank_timeout, blank_off, blank_on }
+--   idle            table    { dim_timeout, blank_timeout, blank_mode, blank_off, blank_on }
 --                            dim_timeout: seconds before dimming (default: 60, 0 = disabled)
 --                            blank_timeout: seconds before blanking (default: 0 = disabled)
---                            blank_off: shell command to turn display off (default: wlopm --off)
---                            blank_on:  shell command to turn display on  (default: wlopm --on)
+--                            blank_mode: "wlopm" (default) or "cec" (daemon mode only)
+--                            blank_off: shell command to turn display off (blank_mode = "wlopm" only)
+--                            blank_on:  shell command to turn display on  (blank_mode = "wlopm" only)
 
 local json = require("lib.json")
 
@@ -65,10 +66,11 @@ local DEFAULTS = {
         color   = "#0d1440",
     },
     idle = {
-        dim_timeout   = 60,   -- 1 minute; 0 = disabled
-        blank_timeout = 0,    -- disabled by default; user must opt in
-        blank_off     = nil,  -- nil = use wlopm default
-        blank_on      = nil,  -- nil = use wlopm default
+        dim_timeout   = 60,       -- 1 minute; 0 = disabled
+        blank_timeout = 0,        -- disabled by default; user must opt in
+        blank_mode    = "wlopm",  -- "wlopm" or "cec"
+        blank_off     = nil,      -- nil = use wlopm default
+        blank_on      = nil,      -- nil = use wlopm default
     },
 }
 

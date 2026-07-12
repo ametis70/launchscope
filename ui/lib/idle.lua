@@ -3,8 +3,12 @@
 -- Configuration (all fields optional):
 --   dim_timeout    number   Seconds of inactivity before dimming starts. Default: 60. 0 = disabled.
 --   blank_timeout  number   Seconds of inactivity before blanking. Default: 0 (disabled).
---   blank_off      string   Shell command to turn the display off.
---   blank_on       string   Shell command to turn the display back on.
+--   blank_mode     string   "wlopm" (default) or "cec".
+--                           "cec" sends standby/activate via the daemon's CEC API — only
+--                           valid in daemon process mode. Cuts power to the display rather
+--                           than blanking the output. Has no effect in standalone mode.
+--   blank_off      string   Shell command to turn the display off (blank_mode = "wlopm" only).
+--   blank_on       string   Shell command to turn the display back on (blank_mode = "wlopm" only).
 --
 -- In DRM/gamescope mode, wlopm is bundled and used automatically when
 -- blank_timeout > 0 and no blank_off/blank_on commands are set.
@@ -13,8 +17,8 @@
 -- index.draw(). Fades from 0 to DIM_MAX_ALPHA over DIM_FADE_DURATION seconds
 -- starting at dim_timeout. Stops short of fully black so the UI remains visible.
 --
--- Blank: runs blank_off once when blank_timeout elapses.
---        runs blank_on when any input arrives while blanked.
+-- Blank: runs blank_off / CEC standby once when blank_timeout elapses.
+--        runs blank_on / CEC activate when any input arrives while blanked.
 --
 -- Wake grace: after waking from blank, input is blocked for WAKE_GRACE_DURATION
 -- seconds so the waking keypress/button is not forwarded to the UI.
@@ -29,6 +33,8 @@
 --   idle.isInputBlocked()          -- true during wake grace period
 
 local M = {}
+
+local client = require("lib.client")
 
 -- Dim fade duration (seconds) and maximum opacity (0–1).
 -- Stopping at 0.85 leaves the UI faintly visible rather than going fully black.
@@ -45,6 +51,7 @@ local DEFAULT_BLANK_ON  = "wlopm --on '*'"
 
 local _dim_timeout   = 60   -- default: 1 minute
 local _blank_timeout = 0    -- default: disabled
+local _blank_mode    = "wlopm"
 local _blank_off     = nil
 local _blank_on      = nil
 local _idle_t        = 0
@@ -67,6 +74,7 @@ function M.init(cfg)
     cfg = cfg or {}
     _dim_timeout   = tonumber(cfg.dim_timeout)   or 60
     _blank_timeout = tonumber(cfg.blank_timeout) or 0
+    _blank_mode    = cfg.blank_mode or "wlopm"
     _blank_off     = cfg.blank_off  or DEFAULT_BLANK_OFF
     _blank_on      = cfg.blank_on   or DEFAULT_BLANK_ON
     _idle_t        = 0
@@ -84,7 +92,11 @@ function M.reset()
         _blanked    = false
         _wake_grace = WAKE_GRACE_DURATION
         _idle_t     = 0
-        runCmd(_blank_on)
+        if _blank_mode == "cec" then
+            client.cecActivate()
+        else
+            runCmd(_blank_on)
+        end
         return
     end
     _idle_t = 0
@@ -101,7 +113,11 @@ function M.update(dt)
     if _blank_enabled and not _blanked and _idle_t >= _blank_timeout then
         _blanked    = true
         _wake_grace = 0
-        runCmd(_blank_off)
+        if _blank_mode == "cec" then
+            client.cecStandby()
+        else
+            runCmd(_blank_off)
+        end
     end
 end
 

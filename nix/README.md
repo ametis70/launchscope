@@ -176,8 +176,9 @@ If neither field is set, the daemon auto-generates a random key on first boot an
 | `ui.background.color` | `"#0d1440"` | Background colour (hex) |
 | `ui.idle.dim_timeout` | `60` | Seconds before dimming. `0` = disabled |
 | `ui.idle.blank_timeout` | `0` | Seconds before blanking. `0` = disabled |
-| `ui.idle.blank_off` | `""` | Shell command to blank display (empty = use bundled `wlopm`) |
-| `ui.idle.blank_on` | `""` | Shell command to unblank display (empty = use bundled `wlopm`) |
+| `ui.idle.blank_mode` | `"wlopm"` | `"wlopm"` or `"cec"`. `"cec"` sends CEC standby/activate via the daemon's API (daemon mode only) |
+| `ui.idle.blank_off` | `""` | Shell command to blank display (`blank_mode = "wlopm"` only) |
+| `ui.idle.blank_on` | `""` | Shell command to unblank display (`blank_mode = "wlopm"` only) |
 
 #### `programs.launchscope.settings.apps`
 

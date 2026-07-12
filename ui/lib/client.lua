@@ -73,6 +73,8 @@ function M.launch(id)       return M.post("/api/launch/" .. id)                e
 function M.stop()            return M.post("/api/stop")                         end
 function M.setVolume(delta)  return M.post("/api/audio/volume", { delta = delta }) end
 function M.setMute(toggle)   return M.post("/api/audio/mute",   { toggle = toggle }) end
-function M.power(action)     return M.post("/api/system/power", { action = action }) end
+function M.cecStandby()  return M.post("/api/cec/standby")  end
+function M.cecActivate() return M.post("/api/cec/activate") end
 
 return M
+

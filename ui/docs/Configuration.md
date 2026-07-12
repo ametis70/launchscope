@@ -50,8 +50,9 @@ Controls the launcher window and gamescope session parameters.
 |---|---|---|---|
 | `idle.dim_timeout` | number | `60` | Seconds of inactivity before dimming. `0` = disabled |
 | `idle.blank_timeout` | number | `0` | Seconds before blanking the display. `0` = disabled |
-| `idle.blank_off` | string | `wlopm --off '*'` | Shell command to turn the display off |
-| `idle.blank_on` | string | `wlopm --on '*'` | Shell command to turn the display back on |
+| `idle.blank_mode` | string | `"wlopm"` | `"wlopm"` or `"cec"`. `"cec"` sends CEC standby/activate via the daemon's API, physically powering the display off. Only valid in daemon process mode. |
+| `idle.blank_off` | string | `wlopm --off '*'` | Shell command to turn the display off (`blank_mode = "wlopm"` only) |
+| `idle.blank_on` | string | `wlopm --on '*'` | Shell command to turn the display back on (`blank_mode = "wlopm"` only) |
 
 ## Examples
 
