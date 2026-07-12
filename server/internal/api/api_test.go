@@ -293,9 +293,9 @@ func TestPostCECStandby_DisabledReturns503(t *testing.T) {
 	}
 }
 
-func TestPostCECSwitchInput_DisabledReturns503(t *testing.T) {
+func TestPostCECPowerOn_DisabledReturns503(t *testing.T) {
 	router, _, _ := newTestRouter(t)
-	w := fromLocalhost(t, router, http.MethodPost, "/api/cec/switch-input", "")
+	w := fromLocalhost(t, router, http.MethodPost, "/api/cec/power-on", "")
 	if w.Code != http.StatusServiceUnavailable {
 		t.Errorf("code = %d, want 503", w.Code)
 	}

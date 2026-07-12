@@ -38,7 +38,6 @@ func main() {
 		"dir", cfgDir,
 		"api.port", cfg.API.Port,
 		"cec.enabled", cfg.CEC.Enabled,
-		"cec.switch_port", cfg.CEC.SwitchPort,
 	)
 
 	// Apps ($XDG_CONFIG_HOME/launchscoped/apps.json)

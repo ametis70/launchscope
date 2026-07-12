@@ -109,7 +109,7 @@ Sets or toggles the default sink mute state. Exactly one of `muted` or `toggle` 
 
 ### `POST /api/cec/activate`
 
-Powers on the base device, waits `CEC_ACTIVATE_DELAY` seconds, then sets this device as the active source. Throttled — repeated calls within 3 seconds are silently dropped. Requires `cec.enabled = true`.
+Sends `ImageViewOn` to the TV and broadcasts `ActiveSource` — the AVR wakes automatically on `ActiveSource`. Throttled — repeated calls within 3 seconds are silently dropped. Requires `cec.enabled = true`.
 
 **Response `200`**
 ```json
@@ -121,9 +121,9 @@ Powers on the base device, waits `CEC_ACTIVATE_DELAY` seconds, then sets this de
 
 ---
 
-### `POST /api/cec/power`
+### `POST /api/cec/power-on`
 
-Powers on the base device only. Does not set active source. Requires `cec.enabled = true`.
+Powers on TV and AVR without switching the active source. Requires `cec.enabled = true`.
 
 **Response `200`**
 ```json
@@ -137,7 +137,7 @@ Powers on the base device only. Does not set active source. Requires `cec.enable
 
 ### `POST /api/cec/set-source`
 
-Sets this device as the active source on the CEC bus, causing the AVR/TV to switch its input. Does not power on the base device first. Requires `cec.enabled = true`.
+Broadcasts `ActiveSource` with the configured physical address, causing the AVR to switch its input to the host PC. Does not power on anything. Requires `cec.enabled = true`.
 
 **Response `200`**
 ```json
@@ -151,18 +151,7 @@ Sets this device as the active source on the CEC bus, causing the AVR/TV to swit
 
 ### `POST /api/cec/standby`
 
-Sends the base device to standby. Requires `cec.enabled = true`.
-
-**Response `200`**
-```json
-{ "status": "ok" }
-```
-
----
-
-### `POST /api/cec/switch-input`
-
-Switches the TV to the HDMI port configured in `cec.switch_port`. Requires `cec.enabled = true` and `cec.switch_port` to be set.
+Sends the AVR to standby. Requires `cec.enabled = true`.
 
 **Response `200`**
 ```json
@@ -170,7 +159,7 @@ Switches the TV to the HDMI port configured in `cec.switch_port`. Requires `cec.
 ```
 
 **Errors**
-- `503` — CEC is not enabled or `switch_port` is not configured
+- `503` — CEC is not enabled in config
 
 ---
 

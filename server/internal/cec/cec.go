@@ -22,9 +22,9 @@ type Client struct {
 // New creates a CEC client.
 func New() *Client { return &Client{} }
 
-// Activate powers on the base device, waits CEC_ACTIVATE_DELAY, then sets
-// this device as the active source. Calls within activateThrottle are dropped
-// to prevent queuing while the bridge is blocking on the delay.
+// Activate powers on TV + AVR, waits CEC_ACTIVATE_DELAY, then sets active
+// source. Throttled — calls within activateThrottle are dropped to avoid
+// queuing while the bridge is blocking on the delay.
 func (c *Client) Activate() error {
 	c.mu.Lock()
 	if time.Since(c.lastActivate) < activateThrottle {
@@ -36,23 +36,15 @@ func (c *Client) Activate() error {
 	return c.send("activate")
 }
 
-// PowerOn powers on the base device only, without switching the active source.
-func (c *Client) PowerOn() error { return c.send("power") }
+// PowerOn powers on the TV and AVR without switching the active source.
+func (c *Client) PowerOn() error { return c.send("power-on") }
 
-// SetSource sets this device as the active source on the CEC bus, causing the
-// AVR/TV to switch its input. Does not power on the base device first.
+// SetSource broadcasts ActiveSource with the configured physical address,
+// switching the AVR input to the host PC.
 func (c *Client) SetSource() error { return c.send("set-source") }
 
-// Standby sends the base device to standby (power off).
+// Standby sends the AVR to standby.
 func (c *Client) Standby() error { return c.send("standby") }
-
-// SwitchInput tells the TV to switch to a specific HDMI port (1-based).
-func (c *Client) SwitchInput(port int) error {
-	if port < 1 || port > 15 {
-		return fmt.Errorf("invalid HDMI port %d (must be 1–15)", port)
-	}
-	return c.send(fmt.Sprintf("switch:%d", port))
-}
 
 func (c *Client) send(cmd string) error {
 	conn, err := net.DialTimeout("unix", socketPath, 3*time.Second)

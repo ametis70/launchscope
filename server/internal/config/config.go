@@ -21,12 +21,10 @@ type APIConfig struct {
 }
 
 // CECConfig controls the optional HDMI-CEC integration.
-// When Enabled is true, POST /api/cec/activate sends "activate" to the
-// cec-uinput Unix socket at /run/cec-uinput/cmd.sock.
-// SwitchPort, if set, is the HDMI port used by POST /api/cec/switch-input.
+// When Enabled is true, the /api/cec/* endpoints are active and send
+// commands to the cec-uinput Unix socket at /run/cec-uinput/cmd.sock.
 type CECConfig struct {
-	Enabled    bool `json:"enabled"`
-	SwitchPort int  `json:"switch_port"` // 1-based HDMI port; 0 = not configured
+	Enabled bool `json:"enabled"`
 }
 
 // defaults returns a Config with sane defaults applied.
@@ -36,8 +34,7 @@ func defaults() Config {
 			Port: 8765,
 		},
 		CEC: CECConfig{
-			Enabled:    false,
-			SwitchPort: 0,
+			Enabled: false,
 		},
 	}
 }

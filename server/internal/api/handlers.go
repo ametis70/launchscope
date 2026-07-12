@@ -224,9 +224,7 @@ func decodeBody(w http.ResponseWriter, r *http.Request, dst any) bool {
 
 // ── POST /api/cec/activate ───────────────────────────────────────────────── //
 
-// makeCECActivateHandler returns a handler that powers on the TV and switches
-// it to the configured HDMI input. If cec is nil (disabled in config) it
-// returns 503 Service Unavailable.
+// makeCECActivateHandler powers on TV + AVR, waits, then sets active source.
 func makeCECActivateHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if c == nil {
@@ -238,57 +236,14 @@ func makeCECActivateHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
 			jsonError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Info("cec activate: TV powered on and input switched")
+		log.Info("cec activate: power-on + set-source sent")
 		jsonOK(w, map[string]string{"status": "ok"})
 	}
 }
 
-// ── POST /api/cec/switch-input ───────────────────────────────────────────── //
+// ── POST /api/cec/power-on ───────────────────────────────────────────────── //
 
-// makeCECSwitchInputHandler switches the TV to the HDMI port in cec.switch_port.
-func makeCECSwitchInputHandler(c *cec.Client, cfgLoader *config.Loader, log *slog.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if c == nil {
-			jsonError(w, "CEC is not enabled", http.StatusServiceUnavailable)
-			return
-		}
-		port := cfgLoader.Current().CEC.SwitchPort
-		if port < 1 {
-			jsonError(w, "cec.switch_port not configured (must be 1–15)", http.StatusServiceUnavailable)
-			return
-		}
-		if err := c.SwitchInput(port); err != nil {
-			log.Error("cec switch-input failed", "port", port, "err", err)
-			jsonError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		log.Info("cec switch-input: TV switched to HDMI port", "port", port)
-		jsonOK(w, map[string]string{"status": "ok"})
-	}
-}
-
-// ── POST /api/cec/standby ────────────────────────────────────────────────── //
-
-// makeCECStandbyHandler sends the TV to standby (power off) via CEC.
-func makeCECStandbyHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if c == nil {
-			jsonError(w, "CEC is not enabled (set cec.enabled = true in config)", http.StatusServiceUnavailable)
-			return
-		}
-		if err := c.Standby(); err != nil {
-			log.Error("cec standby failed", "err", err)
-			jsonError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		log.Info("cec standby: TV sent to standby")
-		jsonOK(w, map[string]string{"status": "ok"})
-	}
-}
-
-// ── POST /api/cec/power ───────────────────────────────────────────────────── //
-
-// makeCECPowerOnHandler powers on the base device only, without setting active source.
+// makeCECPowerOnHandler powers on TV and AVR without switching the active source.
 func makeCECPowerOnHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if c == nil {
@@ -300,14 +255,14 @@ func makeCECPowerOnHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
 			jsonError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Info("cec power-on: base device powered on")
+		log.Info("cec power-on: TV + AVR powered on")
 		jsonOK(w, map[string]string{"status": "ok"})
 	}
 }
 
 // ── POST /api/cec/set-source ─────────────────────────────────────────────── //
 
-// makeCECSetSourceHandler sets this device as the active source on the CEC bus.
+// makeCECSetSourceHandler broadcasts ActiveSource to switch the AVR input.
 func makeCECSetSourceHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if c == nil {
@@ -319,7 +274,26 @@ func makeCECSetSourceHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
 			jsonError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Info("cec set-source: active source set")
+		log.Info("cec set-source: ActiveSource broadcast sent")
+		jsonOK(w, map[string]string{"status": "ok"})
+	}
+}
+
+// ── POST /api/cec/standby ────────────────────────────────────────────────── //
+
+// makeCECStandbyHandler sends the AVR to standby.
+func makeCECStandbyHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if c == nil {
+			jsonError(w, "CEC is not enabled (set cec.enabled = true in config)", http.StatusServiceUnavailable)
+			return
+		}
+		if err := c.Standby(); err != nil {
+			log.Error("cec standby failed", "err", err)
+			jsonError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Info("cec standby: AVR sent to standby")
 		jsonOK(w, map[string]string{"status": "ok"})
 	}
 }

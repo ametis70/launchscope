@@ -76,49 +76,50 @@ in
           Enable the cec-uinput bridge service.
           Connects to a Pulse-Eight USB CEC adapter, forwards remote control
           button presses as uinput keyboard events, and exposes a Unix socket
-          at /run/cec-uinput/cmd.sock for sending CEC commands (activate,
-          standby, switch:N) from launchscoped.
+          at /run/cec-uinput/cmd.sock for CEC commands (power-on, set-source,
+          standby, activate) from launchscoped.
         '';
       };
       adapterDevice = lib.mkOption {
         type    = lib.types.str;
         default = "ttyACM0";
-        description = "The serial device name for the CEC adapter (e.g. ttyACM0).";
+        description = "Serial device name for the CEC adapter (e.g. ttyACM0).";
       };
-      baseDevice = lib.mkOption {
+      tvDevice = lib.mkOption {
         type    = lib.types.int;
         default = 0;
+        description = "Logical CEC address of the TV/projector. Always 0 in a standard topology.";
+      };
+      avrDevice = lib.mkOption {
+        type    = lib.types.nullOr lib.types.int;
+        default = 5;
         description = ''
-          Logical address of the device the adapter is connected to.
-          0 = TV (direct connection), 5 = AVR/audio system.
+          Logical CEC address of the AVR (Audio System), or null for no AVR.
+          With AVR: power-on goes to TV + AVR, standby goes to AVR only.
+          Without AVR: power-on and standby go to the TV directly.
         '';
       };
-      hdmiPort = lib.mkOption {
+      sourcePort = lib.mkOption {
         type    = lib.types.int;
         default = 1;
-        description = "HDMI port number on the base device the adapter is plugged into.";
+        description = "HDMI port on the AVR (or TV if no AVR) the host PC is connected to. Used by libcec to resolve the adapter's physical address on the CEC bus.";
       };
-      standbyAddr = lib.mkOption {
-        type    = lib.types.nullOr lib.types.int;
-        default = null;
+      sourceAddr = lib.mkOption {
+        type    = lib.types.str;
+        default = "";
+        example = "1.6.0.0";
         description = ''
-          Logical address to send the standby command to.
-          Defaults to baseDevice when null.
+          Physical CEC address of the host PC as seen on the bus, e.g. "1.6.0.0"
+          (AVR on TV port 1, host PC on AVR port 6). Used by set-source and
+          activate to broadcast the correct ActiveSource message.
+          Run: echo 'scan' | cec-client -s -d 1
+          to discover addresses on your bus.
         '';
       };
       verbose = lib.mkOption {
         type    = lib.types.bool;
         default = false;
-        description = "Enable verbose libcec logging (CEC_VERBOSE=1). Useful for debugging.";
-      };
-      activateDelay = lib.mkOption {
-        type    = lib.types.float;
-        default = 2.0;
-        description = ''
-          Seconds to wait between powering on the base device and setting the
-          active source during an activate command. Increase if the AVR or
-          display needs more time to wake before accepting the input switch.
-        '';
+        description = "Enable verbose libcec logging.";
       };
       package = lib.mkOption {
         type        = lib.types.package;
@@ -176,11 +177,11 @@ in
         SupplementaryGroups = [ "dialout" "input" ];
         RuntimeDirectory    = "cec-uinput";
         Environment = [
-          "CEC_BASE_DEVICE=${toString cfg.cec.baseDevice}"
-          "CEC_HDMI_PORT=${toString cfg.cec.hdmiPort}"
-          "CEC_STANDBY_ADDR=${toString (if cfg.cec.standbyAddr != null then cfg.cec.standbyAddr else cfg.cec.baseDevice)}"
+          "CEC_TV_DEVICE=${toString cfg.cec.tvDevice}"
+          "CEC_AVR_DEVICE=${if cfg.cec.avrDevice != null then toString cfg.cec.avrDevice else ""}"
+          "CEC_SOURCE_PORT=${toString cfg.cec.sourcePort}"
+          "CEC_SOURCE_ADDR=${cfg.cec.sourceAddr}"
           "CEC_VERBOSE=${if cfg.cec.verbose then "1" else "0"}"
-          "CEC_ACTIVATE_DELAY=${toString cfg.cec.activateDelay}"
         ];
       };
     };

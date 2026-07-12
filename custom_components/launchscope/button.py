@@ -29,7 +29,6 @@ async def async_setup_entry(
         LaunchscopeCECPowerOnButton(coordinator, entry),
         LaunchscopeCECSetSourceButton(coordinator, entry),
         LaunchscopeCECStandbyButton(coordinator, entry),
-        LaunchscopeCECSwitchInputButton(coordinator, entry),
     ])
 
 
@@ -54,7 +53,7 @@ class LaunchscopeStopButton(CoordinatorEntity, ButtonEntity):
 
 
 class LaunchscopeCECActivateButton(CoordinatorEntity, ButtonEntity):
-    """Power on the TV and switch to the HTPC HDMI input via CEC."""
+    """Power on TV + AVR and switch to the host PC input via CEC."""
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
@@ -68,7 +67,7 @@ class LaunchscopeCECActivateButton(CoordinatorEntity, ButtonEntity):
 
 
 class LaunchscopeCECPowerOnButton(CoordinatorEntity, ButtonEntity):
-    """Power on the base device only, without switching input."""
+    """Power on TV and AVR without switching input."""
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
@@ -78,7 +77,7 @@ class LaunchscopeCECPowerOnButton(CoordinatorEntity, ButtonEntity):
         self._attr_device_info = _DEVICE(entry)
 
     async def async_press(self) -> None:
-        await self.coordinator.async_post("/api/cec/power")
+        await self.coordinator.async_post("/api/cec/power-on")
 
 
 class LaunchscopeCECSetSourceButton(CoordinatorEntity, ButtonEntity):
@@ -96,7 +95,7 @@ class LaunchscopeCECSetSourceButton(CoordinatorEntity, ButtonEntity):
 
 
 class LaunchscopeCECStandbyButton(CoordinatorEntity, ButtonEntity):
-    """Send the TV to standby via CEC."""
+    """Send the AVR to standby via CEC."""
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
@@ -107,17 +106,3 @@ class LaunchscopeCECStandbyButton(CoordinatorEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         await self.coordinator.async_post("/api/cec/standby")
-
-
-class LaunchscopeCECSwitchInputButton(CoordinatorEntity, ButtonEntity):
-    """Switch TV to the configured alternate HDMI input."""
-
-    def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id   = f"{entry.entry_id}_cec_switch_input"
-        self._attr_name        = "Switch to HDMI Source"
-        self._attr_icon        = "mdi:hdmi-port"
-        self._attr_device_info = _DEVICE(entry)
-
-    async def async_press(self) -> None:
-        await self.coordinator.async_post("/api/cec/switch-input")

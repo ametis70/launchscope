@@ -86,11 +86,11 @@ The user Launchscope runs as. Autologged in on the configured TTY.
 |---|---|---|
 | `cec.enable` | `false` | Enable the `cec-uinput` bridge service |
 | `cec.adapterDevice` | `"ttyACM0"` | Serial device of the Pulse-Eight adapter |
-| `cec.baseDevice` | `0` | Logical CEC address of the connected device (0 = TV, 5 = AVR) |
-| `cec.hdmiPort` | `1` | HDMI port on the base device |
-| `cec.standbyAddr` | `null` | Address to send standby to (defaults to `baseDevice`) |
+| `cec.tvDevice` | `0` | Logical CEC address of the TV/projector (always 0 per CEC spec) |
+| `cec.avrDevice` | `5` | Logical CEC address of the AVR. Set to `null` for no AVR — commands go to TV directly |
+| `cec.sourcePort` | `1` | HDMI port on the AVR (or TV if no AVR) the host PC is connected to |
+| `cec.sourceAddr` | `""` | Physical CEC address of the host PC, e.g. `"1.6.0.0"` |
 | `cec.verbose` | `false` | Enable verbose libcec logging |
-| `cec.activateDelay` | `2.0` | Seconds between `power_on` and `set_active_source` during activate |
 
 ### Example
 
@@ -100,10 +100,11 @@ services.launchscope = {
   user   = "htpc";
   autologin.tty = "tty1";
   cec = {
-    enable       = true;
+    enable        = true;
     adapterDevice = "ttyACM0";
-    baseDevice   = 0;
-    hdmiPort     = 1;
+    avrDevice     = 5;
+    avrPort       = 1;
+    sourceAddr    = "1.6.0.0";
   };
 };
 ```

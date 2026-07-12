@@ -228,12 +228,7 @@ in
         enabled = lib.mkOption {
           type = lib.types.bool;
           default = false;
-          description = "Enable HDMI-CEC control via the cec-uinput socket (POST /api/cec/activate).";
-        };
-        switch_port = lib.mkOption {
-          type = lib.types.int;
-          default = 0;
-          description = "HDMI port to switch to via POST /api/cec/switch-input (0 = disabled).";
+          description = "Enable HDMI-CEC control via the cec-uinput socket.";
         };
       };
 

@@ -130,7 +130,7 @@ func TestLoader_Current(t *testing.T) {
 }
 
 func TestLoader_CECConfig(t *testing.T) {
-	dir := setup(t, `{"api":{"port":8765,"api_key":"k"},"cec":{"enabled":true,"switch_port":3}}`)
+	dir := setup(t, `{"api":{"port":8765,"api_key":"k"},"cec":{"enabled":true}}`)
 
 	l := config.NewLoader(dir)
 	cfg, err := l.Load()
@@ -139,9 +139,6 @@ func TestLoader_CECConfig(t *testing.T) {
 	}
 	if !cfg.CEC.Enabled {
 		t.Error("CEC.Enabled = false, want true")
-	}
-	if cfg.CEC.SwitchPort != 3 {
-		t.Errorf("CEC.SwitchPort = %d, want 3", cfg.CEC.SwitchPort)
 	}
 }
 

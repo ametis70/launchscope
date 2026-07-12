@@ -4,9 +4,9 @@
 --   dim_timeout    number   Seconds of inactivity before dimming starts. Default: 60. 0 = disabled.
 --   blank_timeout  number   Seconds of inactivity before blanking. Default: 0 (disabled).
 --   blank_mode     string   "wlopm" (default) or "cec".
---                           "cec" sends standby/activate via the daemon's CEC API — only
---                           valid in daemon process mode. Cuts power to the display rather
---                           than blanking the output. Has no effect in standalone mode.
+--                           "cec" sends CEC standby/activate via the daemon's CEC API — only
+--                           valid in daemon process mode. Sends activate when waking from blank
+--                           or dim. Has no effect in standalone mode.
 --   blank_off      string   Shell command to turn the display off (blank_mode = "wlopm" only).
 --   blank_on       string   Shell command to turn the display back on (blank_mode = "wlopm" only).
 --
@@ -97,7 +97,8 @@ end
 -- Reset the idle timer. Call on every input event.
 -- When waking from blank, starts the grace period — the waking input is
 -- absorbed and not forwarded to the UI.
--- In cec mode, always attempts cecActivate (throttled) regardless of blank state.
+-- In cec mode, cecActivate is sent on every input event (throttled) since the
+-- PC has no way to know if the display was turned off externally.
 function M.reset()
     if _blank_mode == "cec" then
         cecActivateThrottled()
