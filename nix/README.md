@@ -90,6 +90,7 @@ The user Launchscope runs as. Autologged in on the configured TTY.
 | `cec.hdmiPort` | `1` | HDMI port on the base device |
 | `cec.standbyAddr` | `null` | Address to send standby to (defaults to `baseDevice`) |
 | `cec.verbose` | `false` | Enable verbose libcec logging |
+| `cec.activateDelay` | `2.0` | Seconds between `power_on` and `set_active_source` during activate |
 
 ### Example
 
@@ -177,6 +178,7 @@ If neither field is set, the daemon auto-generates a random key on first boot an
 | `ui.idle.dim_timeout` | `60` | Seconds before dimming. `0` = disabled |
 | `ui.idle.blank_timeout` | `0` | Seconds before blanking. `0` = disabled |
 | `ui.idle.blank_mode` | `"wlopm"` | `"wlopm"` or `"cec"`. `"cec"` sends CEC standby/activate via the daemon's API (daemon mode only) |
+| `ui.idle.cec_activate_on_start` | `true` | Send CEC activate on UI startup when `blank_mode = "cec"` and daemon mode |
 | `ui.idle.blank_off` | `""` | Shell command to blank display (`blank_mode = "wlopm"` only) |
 | `ui.idle.blank_on` | `""` | Shell command to unblank display (`blank_mode = "wlopm"` only) |
 

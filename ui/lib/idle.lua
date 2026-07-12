@@ -49,16 +49,18 @@ local WAKE_GRACE_DURATION = 2.0
 local DEFAULT_BLANK_OFF = "wlopm --off '*'"
 local DEFAULT_BLANK_ON  = "wlopm --on '*'"
 
-local _dim_timeout   = 60   -- default: 1 minute
-local _blank_timeout = 0    -- default: disabled
-local _blank_mode    = "wlopm"
-local _blank_off     = nil
-local _blank_on      = nil
-local _idle_t        = 0
-local _blanked       = false
-local _wake_grace    = 0
-local _dim_enabled   = false
-local _blank_enabled = false
+local _dim_timeout        = 60
+local _blank_timeout      = 0
+local _blank_mode         = "wlopm"
+local _cec_throttle       = 3.0
+local _cec_throttle_t     = 0
+local _blank_off          = nil
+local _blank_on           = nil
+local _idle_t             = 0
+local _blanked            = false
+local _wake_grace         = 0
+local _dim_enabled        = false
+local _blank_enabled      = false
 
 -- ── Helpers ───────────────────────────────────────────────────────────── --
 
@@ -68,33 +70,43 @@ local function runCmd(cmd)
     end
 end
 
+local function cecActivateThrottled()
+    if _cec_throttle_t > 0 then return end
+    _cec_throttle_t = _cec_throttle
+    client.cecActivate()
+end
+
 -- ── Public API ────────────────────────────────────────────────────────── --
 
 function M.init(cfg)
     cfg = cfg or {}
-    _dim_timeout   = tonumber(cfg.dim_timeout)   or 60
-    _blank_timeout = tonumber(cfg.blank_timeout) or 0
-    _blank_mode    = cfg.blank_mode or "wlopm"
-    _blank_off     = cfg.blank_off  or DEFAULT_BLANK_OFF
-    _blank_on      = cfg.blank_on   or DEFAULT_BLANK_ON
-    _idle_t        = 0
-    _blanked       = false
-    _wake_grace    = 0
-    _dim_enabled   = _dim_timeout   > 0
-    _blank_enabled = _blank_timeout > 0
+    _dim_timeout        = tonumber(cfg.dim_timeout)        or 60
+    _blank_timeout      = tonumber(cfg.blank_timeout)      or 0
+    _blank_mode         = cfg.blank_mode                   or "wlopm"
+    _cec_throttle       = tonumber(cfg.cec_activate_throttle) or 3.0
+    _cec_throttle_t     = 0
+    _blank_off          = cfg.blank_off or DEFAULT_BLANK_OFF
+    _blank_on           = cfg.blank_on  or DEFAULT_BLANK_ON
+    _idle_t             = 0
+    _blanked            = false
+    _wake_grace         = 0
+    _dim_enabled        = _dim_timeout   > 0
+    _blank_enabled      = _blank_timeout > 0
 end
 
 -- Reset the idle timer. Call on every input event.
 -- When waking from blank, starts the grace period — the waking input is
 -- absorbed and not forwarded to the UI.
+-- In cec mode, always attempts cecActivate (throttled) regardless of blank state.
 function M.reset()
+    if _blank_mode == "cec" then
+        cecActivateThrottled()
+    end
     if _blanked then
         _blanked    = false
         _wake_grace = WAKE_GRACE_DURATION
         _idle_t     = 0
-        if _blank_mode == "cec" then
-            client.cecActivate()
-        else
+        if _blank_mode ~= "cec" then
             runCmd(_blank_on)
         end
         return
@@ -106,6 +118,9 @@ end
 function M.update(dt)
     if _wake_grace > 0 then
         _wake_grace = math.max(0, _wake_grace - dt)
+    end
+    if _cec_throttle_t > 0 then
+        _cec_throttle_t = math.max(0, _cec_throttle_t - dt)
     end
     if not _dim_enabled and not _blank_enabled then return end
     _idle_t = _idle_t + dt

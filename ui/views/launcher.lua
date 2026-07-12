@@ -52,6 +52,7 @@ function Launcher.new(cfg, ui)
     self.cfg        = cfg
     self.ui         = ui
     self.process_mode = cfg.process_mode or "daemon"
+    self.blank_mode   = (cfg.idle and cfg.idle.blank_mode) or "wlopm"
     self.font       = newFont(T.FONT_LG)
     self.font_small = newFont(T.FONT_UI)
 
@@ -169,7 +170,7 @@ function Launcher:update(dt)
 
     -- Global hotkeys.
     if inp.wasPressed("POWER") then
-        _G.index.pushModal(PowerModal.new(self.ui, { process_mode = self.process_mode }))
+        _G.index.pushModal(PowerModal.new(self.ui, { process_mode = self.process_mode, blank_mode = self.blank_mode }))
     end
 
     if inp.wasPressed("VOLUME_UP") then
@@ -415,7 +416,7 @@ function Launcher:_buildAux()
         local id = d.id
         btn.on_select = function()
             if id == "power" then
-                _G.index.pushModal(PowerModal.new(self.ui, { process_mode = self.process_mode }))
+                _G.index.pushModal(PowerModal.new(self.ui, { process_mode = self.process_mode, blank_mode = self.blank_mode }))
             end
             if id == "sound"    then _G.index.pushModal(SoundModal.new(self.ui)) end
             if id == "close_app" then self:_closeApp() end

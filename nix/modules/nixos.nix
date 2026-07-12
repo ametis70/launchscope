@@ -111,6 +111,15 @@ in
         default = false;
         description = "Enable verbose libcec logging (CEC_VERBOSE=1). Useful for debugging.";
       };
+      activateDelay = lib.mkOption {
+        type    = lib.types.float;
+        default = 2.0;
+        description = ''
+          Seconds to wait between powering on the base device and setting the
+          active source during an activate command. Increase if the AVR or
+          display needs more time to wake before accepting the input switch.
+        '';
+      };
       package = lib.mkOption {
         type        = lib.types.package;
         default     = selfPkgs.cec-uinput;
@@ -171,6 +180,7 @@ in
           "CEC_HDMI_PORT=${toString cfg.cec.hdmiPort}"
           "CEC_STANDBY_ADDR=${toString (if cfg.cec.standbyAddr != null then cfg.cec.standbyAddr else cfg.cec.baseDevice)}"
           "CEC_VERBOSE=${if cfg.cec.verbose then "1" else "0"}"
+          "CEC_ACTIVATE_DELAY=${toString cfg.cec.activateDelay}"
         ];
       };
     };

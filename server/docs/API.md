@@ -109,7 +109,35 @@ Sets or toggles the default sink mute state. Exactly one of `muted` or `toggle` 
 
 ### `POST /api/cec/activate`
 
-Powers on the TV and switches its input to this device. Requires `cec.enabled = true` in config.
+Powers on the base device, waits `CEC_ACTIVATE_DELAY` seconds, then sets this device as the active source. Throttled — repeated calls within 3 seconds are silently dropped. Requires `cec.enabled = true`.
+
+**Response `200`**
+```json
+{ "status": "ok" }
+```
+
+**Errors**
+- `503` — CEC is not enabled in config
+
+---
+
+### `POST /api/cec/power`
+
+Powers on the base device only. Does not set active source. Requires `cec.enabled = true`.
+
+**Response `200`**
+```json
+{ "status": "ok" }
+```
+
+**Errors**
+- `503` — CEC is not enabled in config
+
+---
+
+### `POST /api/cec/set-source`
+
+Sets this device as the active source on the CEC bus, causing the AVR/TV to switch its input. Does not power on the base device first. Requires `cec.enabled = true`.
 
 **Response `200`**
 ```json
@@ -123,7 +151,7 @@ Powers on the TV and switches its input to this device. Requires `cec.enabled = 
 
 ### `POST /api/cec/standby`
 
-Sends the TV to standby. Requires `cec.enabled = true`.
+Sends the base device to standby. Requires `cec.enabled = true`.
 
 **Response `200`**
 ```json

@@ -6,21 +6,44 @@ package cec
 import (
 	"fmt"
 	"net"
+	"sync"
 	"time"
 )
 
 const socketPath = "/run/cec-uinput/cmd.sock"
+const activateThrottle = 3 * time.Second
 
 // Client sends CEC commands via the cec-uinput Unix socket.
-type Client struct{}
+type Client struct {
+	mu           sync.Mutex
+	lastActivate time.Time
+}
 
 // New creates a CEC client.
 func New() *Client { return &Client{} }
 
-// Activate powers on the TV and switches it to this device's HDMI input.
-func (c *Client) Activate() error { return c.send("activate") }
+// Activate powers on the base device, waits CEC_ACTIVATE_DELAY, then sets
+// this device as the active source. Calls within activateThrottle are dropped
+// to prevent queuing while the bridge is blocking on the delay.
+func (c *Client) Activate() error {
+	c.mu.Lock()
+	if time.Since(c.lastActivate) < activateThrottle {
+		c.mu.Unlock()
+		return nil
+	}
+	c.lastActivate = time.Now()
+	c.mu.Unlock()
+	return c.send("activate")
+}
 
-// Standby sends the TV to standby (power off).
+// PowerOn powers on the base device only, without switching the active source.
+func (c *Client) PowerOn() error { return c.send("power") }
+
+// SetSource sets this device as the active source on the CEC bus, causing the
+// AVR/TV to switch its input. Does not power on the base device first.
+func (c *Client) SetSource() error { return c.send("set-source") }
+
+// Standby sends the base device to standby (power off).
 func (c *Client) Standby() error { return c.send("standby") }
 
 // SwitchInput tells the TV to switch to a specific HDMI port (1-based).

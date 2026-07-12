@@ -54,6 +54,8 @@ func NewRouter(
 
 	// CEC
 	mux.HandleFunc("POST /api/cec/activate", makeCECActivateHandler(cecClient, log))
+	mux.HandleFunc("POST /api/cec/power", makeCECPowerOnHandler(cecClient, log))
+	mux.HandleFunc("POST /api/cec/set-source", makeCECSetSourceHandler(cecClient, log))
 	mux.HandleFunc("POST /api/cec/standby", makeCECStandbyHandler(cecClient, log))
 	mux.HandleFunc("POST /api/cec/switch-input", makeCECSwitchInputHandler(cecClient, cfgLoader, log))
 

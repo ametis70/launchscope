@@ -35,6 +35,7 @@ All configuration is via environment variables:
 | `CEC_HDMI_PORT` | `1` | HDMI port on the base device |
 | `CEC_STANDBY_ADDR` | `CEC_BASE_DEVICE` | Logical address to send standby commands to |
 | `CEC_VERBOSE` | `0` | Set to `1` to enable verbose libcec logging |
+| `CEC_ACTIVATE_DELAY` | `2.0` | Seconds to wait between `power_on` and `set_active_source` during activate |
 
 ## Socket commands
 
@@ -42,7 +43,9 @@ Commands are sent as newline-terminated strings to `/run/cec-uinput/cmd.sock`:
 
 | Command | Description |
 |---|---|
-| `activate` | Power on the base device and set this adapter as the active source |
+| `activate` | Power on the base device, wait `CEC_ACTIVATE_DELAY` seconds, then set active source |
+| `power` | Power on the base device only |
+| `set-source` | Set this device as the active source only |
 | `standby` | Send standby to `CEC_STANDBY_ADDR` |
 | `switch:N` | Same as `activate` (port is fixed at init via `CEC_HDMI_PORT`) |
 
@@ -101,6 +104,7 @@ Environment=CEC_BASE_DEVICE=0
 Environment=CEC_HDMI_PORT=1
 Environment=CEC_STANDBY_ADDR=0
 Environment=CEC_VERBOSE=0
+Environment=CEC_ACTIVATE_DELAY=2.0
 
 [Install]
 WantedBy=multi-user.target

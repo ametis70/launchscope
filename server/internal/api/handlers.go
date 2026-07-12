@@ -285,3 +285,41 @@ func makeCECStandbyHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
 		jsonOK(w, map[string]string{"status": "ok"})
 	}
 }
+
+// ── POST /api/cec/power ───────────────────────────────────────────────────── //
+
+// makeCECPowerOnHandler powers on the base device only, without setting active source.
+func makeCECPowerOnHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if c == nil {
+			jsonError(w, "CEC is not enabled (set cec.enabled = true in config)", http.StatusServiceUnavailable)
+			return
+		}
+		if err := c.PowerOn(); err != nil {
+			log.Error("cec power-on failed", "err", err)
+			jsonError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Info("cec power-on: base device powered on")
+		jsonOK(w, map[string]string{"status": "ok"})
+	}
+}
+
+// ── POST /api/cec/set-source ─────────────────────────────────────────────── //
+
+// makeCECSetSourceHandler sets this device as the active source on the CEC bus.
+func makeCECSetSourceHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if c == nil {
+			jsonError(w, "CEC is not enabled (set cec.enabled = true in config)", http.StatusServiceUnavailable)
+			return
+		}
+		if err := c.SetSource(); err != nil {
+			log.Error("cec set-source failed", "err", err)
+			jsonError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Info("cec set-source: active source set")
+		jsonOK(w, map[string]string{"status": "ok"})
+	}
+}

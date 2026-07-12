@@ -7,6 +7,7 @@
 --   LAUNCHSCOPE_FONT=name      Override font from config (name or absolute path)
 
 local uiconfig  = require("lib.uiconfig")
+local client    = require("lib.client")
 local input     = require("lib.input")
 local shader    = require("lib.shader")
 local volumeBar = require("lib.volume_bar")
@@ -243,6 +244,12 @@ function _init()
 
     idle.init(cfg.idle)
     _G.idle = idle
+
+    if cfg.process_mode == "daemon"
+        and cfg.idle and cfg.idle.blank_mode == "cec"
+        and cfg.idle.cec_activate_on_start ~= false then
+        client.cecActivate()
+    end
 
     if cfg.background then
         shader.load(cfg.background)

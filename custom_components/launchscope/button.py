@@ -26,6 +26,8 @@ async def async_setup_entry(
     async_add_entities([
         LaunchscopeStopButton(coordinator, entry),
         LaunchscopeCECActivateButton(coordinator, entry),
+        LaunchscopeCECPowerOnButton(coordinator, entry),
+        LaunchscopeCECSetSourceButton(coordinator, entry),
         LaunchscopeCECStandbyButton(coordinator, entry),
         LaunchscopeCECSwitchInputButton(coordinator, entry),
     ])
@@ -63,6 +65,34 @@ class LaunchscopeCECActivateButton(CoordinatorEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         await self.coordinator.async_post("/api/cec/activate")
+
+
+class LaunchscopeCECPowerOnButton(CoordinatorEntity, ButtonEntity):
+    """Power on the base device only, without switching input."""
+
+    def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id   = f"{entry.entry_id}_cec_power_on"
+        self._attr_name        = "Power On"
+        self._attr_icon        = "mdi:power"
+        self._attr_device_info = _DEVICE(entry)
+
+    async def async_press(self) -> None:
+        await self.coordinator.async_post("/api/cec/power")
+
+
+class LaunchscopeCECSetSourceButton(CoordinatorEntity, ButtonEntity):
+    """Set this device as the active source without powering on."""
+
+    def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id   = f"{entry.entry_id}_cec_set_source"
+        self._attr_name        = "Set Active Source"
+        self._attr_icon        = "mdi:import"
+        self._attr_device_info = _DEVICE(entry)
+
+    async def async_press(self) -> None:
+        await self.coordinator.async_post("/api/cec/set-source")
 
 
 class LaunchscopeCECStandbyButton(CoordinatorEntity, ButtonEntity):

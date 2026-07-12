@@ -155,9 +155,10 @@ let
     display = cfg.settings.ui.display;
     background = cfg.settings.ui.background;
     idle = {
-      dim_timeout = cfg.settings.ui.idle.dim_timeout;
-      blank_timeout = cfg.settings.ui.idle.blank_timeout;
-      blank_mode = cfg.settings.ui.idle.blank_mode;
+      dim_timeout           = cfg.settings.ui.idle.dim_timeout;
+      blank_timeout         = cfg.settings.ui.idle.blank_timeout;
+      blank_mode            = cfg.settings.ui.idle.blank_mode;
+      cec_activate_on_start = cfg.settings.ui.idle.cec_activate_on_start;
     }
     // lib.optionalAttrs (cfg.settings.ui.idle.blank_off != "") {
       blank_off = cfg.settings.ui.idle.blank_off;
@@ -342,6 +343,15 @@ in
               "cec" sends standby/activate via the daemon's CEC API, physically powering
               the display off rather than just blanking the output. Only valid in daemon
               process mode.
+            '';
+          };
+          cec_activate_on_start = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = ''
+              When blank_mode = "cec" and process_mode = "daemon", send a CEC activate
+              command (power on + set active source) when the UI starts. Set to false
+              to suppress the startup activation.
             '';
           };
           blank_off = lib.mkOption {

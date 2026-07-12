@@ -2,9 +2,11 @@
 -- Each item pushes a ConfirmModal before acting.
 -- In standalone process mode an extra "Exit" item is shown instead of
 -- "Restart Service" (which requires a running launchscoped daemon).
+-- When blank_mode = "cec" and process_mode = "daemon", a "Turn Off TV" item
+-- is shown that sends a CEC standby command via the daemon API.
 --
 -- Usage:
---   _G.index.pushModal(PowerModal.new(_G.UI, { process_mode = cfg.process_mode }))
+--   _G.index.pushModal(PowerModal.new(_G.UI, { process_mode = cfg.process_mode, blank_mode = cfg.idle.blank_mode }))
 
 local BaseModal    = require("components.modals.base_modal")
 local ConfirmModal = require("components.modals.confirm_modal")
@@ -29,12 +31,16 @@ function PowerModal.new(ui, opts)
     self._rects      = {}
     self._standalone = opts and opts.process_mode == "standalone" or false
     self._server     = not self._standalone
+    self._cec        = self._server and (opts and opts.blank_mode == "cec") or false
 
     self._items = {}
     if self._standalone then
         self._items[#self._items+1] = { id = "quit",            label = "Exit"            }
     else
         self._items[#self._items+1] = { id = "restart_service", label = "Restart Service" }
+    end
+    if self._cec then
+        self._items[#self._items+1] = { id = "tv_off", label = "Turn Off TV" }
     end
     for _, v in ipairs(BASE_ITEMS) do
         self._items[#self._items+1] = v
@@ -105,11 +111,16 @@ function PowerModal:_confirm(item)
         suspend         = "Suspend the system?",
         restart         = "Restart the system?",
         quit            = "Close the launcher?",
+        tv_off          = "Turn off the TV?",
     }
     local msg = messages[item.id] or (item.label .. "?")
     _G.index.pushModal(ConfirmModal.new(item.label, msg, function()
         if item.id == "quit" then
             love.event.quit()
+        elseif item.id == "tv_off" then
+            _G.index.popModal()   -- confirm
+            _G.index.popModal()   -- power
+            client.cecStandby()
         elseif item.id == "restart_service" then
             _G.index.popModal()   -- confirm
             _G.index.popModal()   -- power

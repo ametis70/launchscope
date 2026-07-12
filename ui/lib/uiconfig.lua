@@ -38,6 +38,7 @@
 --                            dim_timeout: seconds before dimming (default: 60, 0 = disabled)
 --                            blank_timeout: seconds before blanking (default: 0 = disabled)
 --                            blank_mode: "wlopm" (default) or "cec" (daemon mode only)
+--                            cec_activate_on_start: send CEC activate on UI startup (default: true, cec+daemon only)
 --                            blank_off: shell command to turn display off (blank_mode = "wlopm" only)
 --                            blank_on:  shell command to turn display on  (blank_mode = "wlopm" only)
 
@@ -66,11 +67,12 @@ local DEFAULTS = {
         color   = "#0d1440",
     },
     idle = {
-        dim_timeout   = 60,       -- 1 minute; 0 = disabled
-        blank_timeout = 0,        -- disabled by default; user must opt in
-        blank_mode    = "wlopm",  -- "wlopm" or "cec"
-        blank_off     = nil,      -- nil = use wlopm default
-        blank_on      = nil,      -- nil = use wlopm default
+        dim_timeout           = 60,       -- 1 minute; 0 = disabled
+        blank_timeout         = 0,        -- disabled by default; user must opt in
+        blank_mode            = "wlopm",  -- "wlopm" or "cec"
+        cec_activate_on_start = true,     -- send CEC activate on startup (cec+daemon only)
+        blank_off             = nil,      -- nil = use wlopm default
+        blank_on              = nil,      -- nil = use wlopm default
     },
 }
 

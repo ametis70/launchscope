@@ -7,14 +7,17 @@ handles both incoming remote key presses and outgoing CEC commands.
 
 Remote key presses are forwarded as uinput keyboard events.
 Commands are received via a Unix socket at /run/cec-uinput/cmd.sock:
-  activate   — set as active source (wakes display, switches AVR input)
-  standby    — send standby to the configured device
-  switch:N   — same as activate (port is fixed at init via CEC_HDMI_PORT)
+  activate     — power on base device, wait CEC_ACTIVATE_DELAY, set active source
+  power        — power on base device only
+  set-source   — set this device as active source only
+  standby      — send standby to the configured device
+  switch:N     — same as activate (port is fixed at init via CEC_HDMI_PORT)
 
 Configuration via environment variables:
-  CEC_BASE_DEVICE   logical address the adapter is connected to (default: 0 = TV)
-  CEC_HDMI_PORT     HDMI port on the base device (default: 1)
-  CEC_STANDBY_ADDR  logical address to send standby to (default: CEC_BASE_DEVICE)
+  CEC_BASE_DEVICE      logical address the adapter is connected to (default: 0 = TV)
+  CEC_HDMI_PORT        HDMI port on the base device (default: 1)
+  CEC_STANDBY_ADDR     logical address to send standby to (default: CEC_BASE_DEVICE)
+  CEC_ACTIVATE_DELAY   seconds between power_on and set_active_source in activate (default: 2.0)
 """
 
 import cec
@@ -22,15 +25,17 @@ import os
 import socket
 import sys
 import threading
+import time
 
 from evdev import UInput, ecodes as e
 
 SOCKET_PATH = "/run/cec-uinput/cmd.sock"
 
-CEC_BASE         = int(os.environ.get("CEC_BASE_DEVICE", "0"))
-CEC_PORT         = int(os.environ.get("CEC_HDMI_PORT",   "1"))
-CEC_STANDBY_ADDR = int(os.environ.get("CEC_STANDBY_ADDR", str(CEC_BASE)))
+CEC_BASE         = int(os.environ.get("CEC_BASE_DEVICE",    "0"))
+CEC_PORT         = int(os.environ.get("CEC_HDMI_PORT",      "1"))
+CEC_STANDBY_ADDR = int(os.environ.get("CEC_STANDBY_ADDR",   str(CEC_BASE)))
 CEC_VERBOSE      = os.environ.get("CEC_VERBOSE", "0") == "1"
+CEC_ACTIVATE_DELAY = float(os.environ.get("CEC_ACTIVATE_DELAY", "2.0"))
 
 # CEC UI Command codes → Linux key codes
 CEC_KEYMAP = {
@@ -111,13 +116,28 @@ def handle_command(cmd):
     cmd = cmd.strip().lower()
     if cmd == "activate" or cmd.startswith("switch:"):
         label = "activate" if cmd == "activate" else f"switch ({cmd})"
-        print(f"cec-uinput: {label} — powering on base device and setting active source", flush=True)
+        print(f"cec-uinput: {label} — powering on base device, waiting {CEC_ACTIVATE_DELAY}s, setting active source", flush=True)
         try:
             cec.Device(CEC_BASE).power_on()
+            time.sleep(CEC_ACTIVATE_DELAY)
             cec.set_active_source()
             print(f"cec-uinput: {label} done", flush=True)
         except Exception as ex:
             print(f"cec-uinput: {label} error: {ex}", flush=True)
+    elif cmd == "power":
+        print(f"cec-uinput: power — powering on base device {CEC_BASE}", flush=True)
+        try:
+            cec.Device(CEC_BASE).power_on()
+            print("cec-uinput: power done", flush=True)
+        except Exception as ex:
+            print(f"cec-uinput: power error: {ex}", flush=True)
+    elif cmd == "set-source":
+        print("cec-uinput: set-source — setting active source", flush=True)
+        try:
+            cec.set_active_source()
+            print("cec-uinput: set-source done", flush=True)
+        except Exception as ex:
+            print(f"cec-uinput: set-source error: {ex}", flush=True)
     elif cmd == "standby":
         print(f"cec-uinput: standby — sending to device {CEC_STANDBY_ADDR}", flush=True)
         try:

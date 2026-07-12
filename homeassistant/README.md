@@ -33,9 +33,11 @@ Custom Home Assistant integration for controlling and monitoring [launchscoped](
 | Launchscope | `media_player` | Current app state, source selection, volume and mute control |
 | Current App | `sensor` | ID of the running app, or `idle` |
 | Stop App | `button` | Stop the running app and return to the launcher (only available when an app is running) |
-| Turn On TV | `button` | Power on the TV and switch its input via HDMI-CEC |
-| Turn Off TV | `button` | Send the TV to standby via HDMI-CEC |
-| Switch to HDMI Source | `button` | Switch the TV to the configured alternate HDMI input via CEC |
+| Turn On TV | `button` | Power on the base device and set active source via HDMI-CEC (`POST /api/cec/activate`) |
+| Power On | `button` | Power on the base device only, without switching input (`POST /api/cec/power`) |
+| Set Active Source | `button` | Set this device as the active source without powering on (`POST /api/cec/set-source`) |
+| Turn Off TV | `button` | Send the base device to standby via HDMI-CEC (`POST /api/cec/standby`) |
+| Switch to HDMI Source | `button` | Switch the TV to the configured alternate HDMI input (`POST /api/cec/switch-input`) |
 
 The media player's source list reflects the app list from `GET /api/apps`. Selecting a source launches the corresponding app.
 
