@@ -222,7 +222,36 @@ func decodeBody(w http.ResponseWriter, r *http.Request, dst any) bool {
 	return true
 }
 
-// ── POST /api/cec/activate ───────────────────────────────────────────────── //
+// ── GET /api/cec/state ───────────────────────────────────────────────────── //
+
+func makeCECGetStateHandler(c *cec.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if c == nil {
+			jsonError(w, "CEC is not enabled (set cec.enabled = true in config)", http.StatusServiceUnavailable)
+			return
+		}
+		jsonOK(w, c.GetState())
+	}
+}
+
+// ── POST /api/cec/state ──────────────────────────────────────────────────── //
+
+func makeCECPostStateHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if c == nil {
+			jsonError(w, "CEC is not enabled (set cec.enabled = true in config)", http.StatusServiceUnavailable)
+			return
+		}
+		var s cec.State
+		if !decodeBody(w, r, &s) {
+			return
+		}
+		c.SetState(s)
+		log.Debug("cec state updated", "tv_on", s.TVOn, "avr_on", s.AVROn, "active_source", s.ActiveSource, "is_active_source", s.IsActiveSource)
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
 
 // makeCECActivateHandler powers on TV + AVR, waits, then sets active source.
 func makeCECActivateHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {

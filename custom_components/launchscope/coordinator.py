@@ -35,7 +35,21 @@ class LauncherCoordinator(DataUpdateCoordinator):
                     headers=self.headers,
                 ) as resp:
                     resp.raise_for_status()
-                    return await resp.json()
+                    data = await resp.json()
+
+                # Fetch CEC state — best-effort, don't fail the update if unavailable.
+                try:
+                    async with self._session.get(
+                        f"{self.base_url}/api/cec/state",
+                        headers=self.headers,
+                        timeout=aiohttp.ClientTimeout(total=5),
+                    ) as cec_resp:
+                        if cec_resp.status == 200:
+                            data["cec"] = await cec_resp.json()
+                except Exception:
+                    pass
+
+                return data
         except Exception as err:
             raise UpdateFailed(f"Error communicating with launchscoped: {err}") from err
 

@@ -53,6 +53,8 @@ func NewRouter(
 	mux.HandleFunc("POST /api/audio/mute", h.postAudioMute)
 
 	// CEC
+	mux.HandleFunc("GET /api/cec/state",       makeCECGetStateHandler(cecClient))
+	mux.HandleFunc("POST /api/cec/state",      makeCECPostStateHandler(cecClient, log))
 	mux.HandleFunc("POST /api/cec/activate",   makeCECActivateHandler(cecClient, log))
 	mux.HandleFunc("POST /api/cec/power-on",   makeCECPowerOnHandler(cecClient, log))
 	mux.HandleFunc("POST /api/cec/set-source", makeCECSetSourceHandler(cecClient, log))
@@ -114,7 +116,7 @@ func loggingMiddleware(log *slog.Logger, next http.Handler) http.Handler {
 		// Use Debug for the high-frequency status poll to avoid log noise,
 		// Info for everything else.
 		logFn := log.Info
-		if r.URL.Path == "/api/status" {
+		if r.URL.Path == "/api/status" || r.URL.Path == "/api/cec/state" {
 			logFn = log.Debug
 		}
 		logFn("http",

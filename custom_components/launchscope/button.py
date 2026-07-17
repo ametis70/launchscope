@@ -58,7 +58,7 @@ class LaunchscopeCECActivateButton(CoordinatorEntity, ButtonEntity):
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id   = f"{entry.entry_id}_cec_activate"
-        self._attr_name        = "Turn On TV"
+        self._attr_name        = "Activate Launchscope"
         self._attr_icon        = "mdi:television-play"
         self._attr_device_info = _DEVICE(entry)
 
@@ -72,7 +72,7 @@ class LaunchscopeCECPowerOnButton(CoordinatorEntity, ButtonEntity):
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id   = f"{entry.entry_id}_cec_power_on"
-        self._attr_name        = "Power On"
+        self._attr_name        = "Turn On TV"
         self._attr_icon        = "mdi:power"
         self._attr_device_info = _DEVICE(entry)
 
@@ -86,7 +86,7 @@ class LaunchscopeCECSetSourceButton(CoordinatorEntity, ButtonEntity):
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id   = f"{entry.entry_id}_cec_set_source"
-        self._attr_name        = "Set Active Source"
+        self._attr_name        = "Set as Active Source"
         self._attr_icon        = "mdi:import"
         self._attr_device_info = _DEVICE(entry)
 

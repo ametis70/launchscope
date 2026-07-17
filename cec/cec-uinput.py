@@ -30,16 +30,17 @@ Configuration via environment variables:
   CEC_SOURCE_PORT    HDMI port on the AVR (or TV if no AVR) the host PC is connected to (default: 1)
   CEC_SOURCE_ADDR    physical address of the host PC on the CEC bus, e.g. "1.6.0.0".
                      Run: echo 'scan' | cec-client -s -d 1
-  CEC_OSD_NAME       name shown in TV/AVR input menus, max 14 chars (default: "launchscope")
   CEC_VERBOSE        set to 1 for verbose libcec logging (default: 0)
 """
 
 import cec
+import json
 import os
 import socket
 import sys
 import struct
 import threading
+import urllib.request
 
 from evdev import UInput, ecodes as e
 
@@ -51,6 +52,10 @@ CEC_AVR            = int(CEC_AVR) if CEC_AVR != "" else None
 CEC_SOURCE_PORT    = int(os.environ.get("CEC_SOURCE_PORT",    "1"))
 CEC_SOURCE_ADDR    = os.environ.get("CEC_SOURCE_ADDR",        "")
 CEC_VERBOSE        = os.environ.get("CEC_VERBOSE", "0") == "1"
+SERVER_URL         = os.environ.get("LAUNCHSCOPE_SERVER_URL", "http://127.0.0.1:8765")
+SERVER_API_KEY     = os.environ.get("LAUNCHSCOPE_API_KEY", "")
+
+OWN_LOGICAL = 1  # libcec always registers as Recorder 1
 
 # CEC UI Command codes → Linux key codes
 CEC_KEYMAP = {
@@ -98,14 +103,122 @@ CEC_NAMES = {
 
 ui          = None
 pressed_key = None
-_is_active_source = False
+
+# ── CEC state ─────────────────────────────────────────────────────────────── #
+_state_lock        = threading.Lock()
+_tv_on             = False
+_avr_on            = False
+_active_source     = None    # logical addr (int) of current active source, or None
+_is_active_source  = False   # _active_source == OWN_LOGICAL
+
+# Physical address (2-byte big-endian hex) → logical address.
+# Populated from environment + known fixed addresses.
+_PHYS_TO_LOGICAL: dict[bytes, int] = {
+    bytes.fromhex("0000"): 0,   # TV always 0.0.0.0
+}
+
+def _build_phys_map():
+    """Populate _PHYS_TO_LOGICAL from configured addresses."""
+    if CEC_SOURCE_ADDR:
+        addr_bytes = parse_physical_addr(CEC_SOURCE_ADDR)
+        _PHYS_TO_LOGICAL[addr_bytes] = OWN_LOGICAL
 
 
 def on_source_activated(event, logical_addr, activated):
-    global _is_active_source
-    _is_active_source = bool(activated)
-    state = "active" if activated else "inactive"
-    print(f"cec-uinput: source {state} (logical {logical_addr})", flush=True)
+    # EVENT_ACTIVATED only fires for our own device — not useful for tracking
+    # which device is currently active. Active source tracking is done via
+    # on_command watching for ActiveSource (0x82) and RoutingChange (0x80).
+    pass
+
+
+def on_command(event, cmd):
+    """Track active source and power state from incoming CEC commands."""
+    global _active_source, _is_active_source, _tv_on, _avr_on
+    opcode    = cmd.get("opcode")
+    initiator = cmd.get("initiator")
+    params    = cmd.get("parameters", b"")
+
+    # TV power ON — ReportPowerStatus (0x90) from TV with params=0x00
+    if opcode == 0x90 and initiator == CEC_TV and params and params[0] == 0x00:
+        with _state_lock:
+            if _tv_on:
+                return
+            _tv_on = True
+        print("cec-uinput: TV power on", flush=True)
+        push_state()
+
+    # TV standby — Standby (0x36) broadcast from TV
+    elif opcode == 0x36 and initiator == CEC_TV:
+        with _state_lock:
+            if not _tv_on and not _avr_on:
+                return
+            _tv_on  = False
+            _avr_on = False
+        print("cec-uinput: TV standby — marking AVR off too", flush=True)
+        push_state()
+
+    # AVR on/off — SetSystemAudioMode (0x72) from AVR
+    elif opcode == 0x72 and CEC_AVR is not None and initiator == CEC_AVR:
+        avr_on = bool(params) and params[0] == 0x01
+        with _state_lock:
+            if avr_on == _avr_on:
+                return
+            _avr_on = avr_on
+        print(f"cec-uinput: AVR system audio → {'on' if avr_on else 'off'}", flush=True)
+        push_state()
+
+    # ActiveSource (0x82) — device announcing itself as active source
+    elif opcode == cec.CEC_OPCODE_ACTIVE_SOURCE:
+        if initiator is None:
+            return
+        with _state_lock:
+            if _active_source == initiator:
+                return
+            _active_source    = initiator
+            _is_active_source = (initiator == OWN_LOGICAL)
+        print(f"cec-uinput: active source → logical {initiator} (us={_is_active_source})", flush=True)
+        push_state()
+
+    # RoutingChange (0x80) from AVR — new physical addr in params[2:4]
+    elif opcode == 0x80 and CEC_AVR is not None and initiator == CEC_AVR:
+        if len(params) < 4:
+            return
+        new_phys = bytes(params[2:4])
+        logical  = _PHYS_TO_LOGICAL.get(new_phys)
+        if logical is None:
+            return  # unknown/dummy device — ignore
+        with _state_lock:
+            if _active_source == logical:
+                return
+            _active_source    = logical
+            _is_active_source = (logical == OWN_LOGICAL)
+        print(f"cec-uinput: routing change → physical {new_phys.hex()} logical {logical}", flush=True)
+        push_state()
+
+
+def push_state():
+    """POST current CEC state to the Go server."""
+    with _state_lock:
+        payload = {
+            "tv_on":           _tv_on,
+            "avr_on":          _avr_on,
+            "active_source":   _active_source,
+            "is_active_source": _is_active_source,
+        }
+    body = json.dumps(payload).encode()
+    headers = {"Content-Type": "application/json"}
+    if SERVER_API_KEY:
+        headers["X-Api-Key"] = SERVER_API_KEY
+    try:
+        req = urllib.request.Request(
+            f"{SERVER_URL}/api/cec/state",
+            data=body,
+            headers=headers,
+            method="POST",
+        )
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as ex:
+        print(f"cec-uinput: push_state error: {ex}", flush=True)
 
 
 def parse_physical_addr(s):
@@ -136,20 +249,28 @@ def do_device_vendor_id():
 
 
 def do_set_source():
+    global _active_source, _is_active_source
     if not CEC_SOURCE_ADDR:
         print("cec-uinput: set-source — CEC_SOURCE_ADDR not set, falling back to set_active_source()", flush=True)
         cec.set_active_source()
-        return
-    addr_bytes = parse_physical_addr(CEC_SOURCE_ADDR)
-    cec.transmit(cec.CECDEVICE_BROADCAST, cec.CEC_OPCODE_ACTIVE_SOURCE, addr_bytes)
-    # SystemAudioModeRequest to AVR — explicitly asks it to wake and take
-    # audio control. Parameters are our physical address.
-    if CEC_AVR is not None:
-        cec.transmit(CEC_AVR, cec.CEC_OPCODE_SYSTEM_AUDIO_MODE_REQUEST, addr_bytes)
+    else:
+        addr_bytes = parse_physical_addr(CEC_SOURCE_ADDR)
+        cec.transmit(cec.CECDEVICE_BROADCAST, cec.CEC_OPCODE_ACTIVE_SOURCE, addr_bytes)
+        # SystemAudioModeRequest to AVR — explicitly asks it to wake and take
+        # audio control. Parameters are our physical address.
+        if CEC_AVR is not None:
+            cec.transmit(CEC_AVR, cec.CEC_OPCODE_SYSTEM_AUDIO_MODE_REQUEST, addr_bytes)
+    # Outgoing ActiveSource is not echoed back via EVENT_COMMAND — update state directly.
+    with _state_lock:
+        _active_source    = OWN_LOGICAL
+        _is_active_source = True
+    push_state()
 
 
 def do_standby():
-    if not _is_active_source:
+    with _state_lock:
+        active = _is_active_source
+    if not active:
         print("cec-uinput: standby — skipped, host PC is not the active source", flush=True)
         return
     if CEC_AVR is not None:
@@ -246,10 +367,12 @@ def main():
     else:
         cec.set_port(CEC_AVR if CEC_AVR is not None else CEC_TV, CEC_SOURCE_PORT)
     cec.init()
+    _build_phys_map()
     if CEC_VERBOSE:
         cec.add_callback(on_log, cec.EVENT_LOG)
     cec.add_callback(on_keypress, cec.EVENT_KEYPRESS)
     cec.add_callback(on_source_activated, cec.EVENT_ACTIVATED)
+    cec.add_callback(on_command, cec.EVENT_COMMAND)
     print("cec-uinput: libcec initialised", flush=True)
 
     t = threading.Thread(target=socket_server, daemon=True)

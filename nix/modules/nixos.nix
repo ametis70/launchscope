@@ -121,6 +121,11 @@ in
         default = false;
         description = "Enable verbose libcec logging.";
       };
+      serverPort = lib.mkOption {
+        type    = lib.types.int;
+        default = 8765;
+        description = "Port that launchscoped listens on. Used by cec-uinput to push CEC state.";
+      };
       package = lib.mkOption {
         type        = lib.types.package;
         default     = selfPkgs.cec-uinput;
@@ -182,6 +187,7 @@ in
           "CEC_SOURCE_PORT=${toString cfg.cec.sourcePort}"
           "CEC_SOURCE_ADDR=${cfg.cec.sourceAddr}"
           "CEC_VERBOSE=${if cfg.cec.verbose then "1" else "0"}"
+          "LAUNCHSCOPE_SERVER_URL=http://127.0.0.1:${toString cfg.cec.serverPort}"
         ];
       };
     };

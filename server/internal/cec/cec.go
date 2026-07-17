@@ -13,14 +13,39 @@ import (
 const socketPath = "/run/cec-uinput/cmd.sock"
 const activateThrottle = 3 * time.Second
 
-// Client sends CEC commands via the cec-uinput Unix socket.
+// State holds the last-known CEC device state pushed by cec-uinput.
+type State struct {
+	TVOn           bool  `json:"tv_on"`
+	AVROn          *bool `json:"avr_on"`           // nil when no AVR configured
+	ActiveSource   *int  `json:"active_source"`    // logical addr, nil when unknown
+	IsActiveSource bool  `json:"is_active_source"` // active_source == own logical addr (1)
+}
+
+// Client sends CEC commands via the cec-uinput Unix socket and stores
+// the last-known CEC state pushed by the bridge.
 type Client struct {
 	mu           sync.Mutex
 	lastActivate time.Time
+	stateMu      sync.RWMutex
+	state        State
 }
 
 // New creates a CEC client.
 func New() *Client { return &Client{} }
+
+// GetState returns the last-known CEC state.
+func (c *Client) GetState() State {
+	c.stateMu.RLock()
+	defer c.stateMu.RUnlock()
+	return c.state
+}
+
+// SetState replaces the stored CEC state.
+func (c *Client) SetState(s State) {
+	c.stateMu.Lock()
+	defer c.stateMu.Unlock()
+	c.state = s
+}
 
 // Activate powers on TV + AVR, waits CEC_ACTIVATE_DELAY, then sets active
 // source. Throttled — calls within activateThrottle are dropped to avoid
