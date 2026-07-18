@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class LauncherCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass: HomeAssistant, host: str, port: int, api_key: str) -> None:
+    def __init__(self, hass: HomeAssistant, host: str, port: int, api_key: str, scan_interval: int = 10) -> None:
         self.base_url = f"http://{host}:{port}"
         self.headers  = {"X-Api-Key": api_key}
         self._session  = async_get_clientsession(hass)
@@ -24,7 +24,7 @@ class LauncherCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=30),
+            update_interval=timedelta(seconds=scan_interval),
         )
 
     async def _async_update_data(self):
