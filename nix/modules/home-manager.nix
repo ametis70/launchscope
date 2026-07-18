@@ -159,6 +159,8 @@ let
       blank_timeout         = cfg.settings.ui.idle.blank_timeout;
       blank_mode            = cfg.settings.ui.idle.blank_mode;
       cec_activate_on_start = cfg.settings.ui.idle.cec_activate_on_start;
+      cec_poll_interval     = cfg.settings.ui.idle.cec_poll_interval;
+      cec_poll_mode         = cfg.settings.ui.idle.cec_poll_mode;
     }
     // lib.optionalAttrs (cfg.settings.ui.idle.blank_off != "") {
       blank_off = cfg.settings.ui.idle.blank_off;
@@ -363,6 +365,22 @@ in
             description = ''
               Shell command to turn the display back on. Leave empty to use the
               bundled wlopm default (correct for DRM/gamescope mode).
+            '';
+          };
+          cec_poll_interval = lib.mkOption {
+            type = lib.types.int;
+            default = 5;
+            description = ''
+              Seconds between CEC state polls when blank_mode = "cec".
+              Controls how quickly the UI reacts to TV/source changes.
+            '';
+          };
+          cec_poll_mode = lib.mkOption {
+            type = lib.types.enum [ "http" ];
+            default = "http";
+            description = ''
+              CEC state polling mode. "http" polls /api/cec/state over HTTP.
+              "ws" (WebSocket) is reserved for future use.
             '';
           };
         };

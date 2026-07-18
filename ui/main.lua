@@ -16,6 +16,7 @@ local cursor    = require("lib.cursor")
 local sound     = require("lib.sound")
 local T         = require("lib.theme")
 local idle      = require("lib.idle")
+local cec_state = require("lib.cec_state")
 local index     = require("index")
 
 -- Expose cursor globally so views and modals can switch cursors.
@@ -108,10 +109,16 @@ function love.load()
 end
 
 function love.update(dt)
-    -- While blanked, skip all rendering work and sleep to release the CPU.
-    -- Input events still wake us via the love callbacks, which call idle.reset().
+    -- While blanked or display not visible (TV off / wrong source), skip
+    -- all rendering work and sleep to release the CPU.
     if _G.idle and _G.idle.isBlanked() then
         input.flush()
+        love.timer.sleep(0.1)
+        return
+    end
+    if not cec_state.isVisible() then
+        input.flush()
+        cec_state.update(dt)
         love.timer.sleep(0.1)
         return
     end
@@ -122,6 +129,7 @@ function love.update(dt)
     end
 
     shader.update(dt)
+    cec_state.update(dt)
 
     if cfg and cfg.process_mode ~= "daemon" then
         _vol_poll_timer = _vol_poll_timer + dt
@@ -138,6 +146,7 @@ end
 
 function love.draw()
     if _G.idle and _G.idle.isBlanked() then return end
+    if not cec_state.isVisible() then return end
     index.draw()
 end
 
@@ -244,6 +253,8 @@ function _init()
 
     idle.init(cfg.idle)
     _G.idle = idle
+
+    cec_state.init(cfg, idle)
 
     if cfg.process_mode == "daemon"
         and cfg.idle and cfg.idle.blank_mode == "cec"

@@ -34,13 +34,16 @@
 --                              sharpness, hdr, adaptive_sync, force_grab,
 --                              expose_wayland, composite_debug, mangoapp, extra_flags
 --   background      table    { type, animate, color }
---   idle            table    { dim_timeout, blank_timeout, blank_mode, blank_off, blank_on }
+--   idle            table    { dim_timeout, blank_timeout, blank_mode, blank_off, blank_on,
+--                              cec_poll_interval, cec_poll_mode }
 --                            dim_timeout: seconds before dimming (default: 60, 0 = disabled)
 --                            blank_timeout: seconds before blanking (default: 0 = disabled)
 --                            blank_mode: "wlopm" (default) or "cec" (daemon mode only)
 --                            cec_activate_on_start: send CEC activate on UI startup (default: true, cec+daemon only)
 --                            blank_off: shell command to turn display off (blank_mode = "wlopm" only)
 --                            blank_on:  shell command to turn display on  (blank_mode = "wlopm" only)
+--                            cec_poll_interval: seconds between CEC state polls (default: 5, cec+daemon only)
+--                            cec_poll_mode: "http" (default) — "ws" reserved for future WebSocket support
 
 local json = require("lib.json")
 
@@ -67,12 +70,14 @@ local DEFAULTS = {
         color   = "#0d1440",
     },
     idle = {
-        dim_timeout           = 60,       -- 1 minute; 0 = disabled
-        blank_timeout         = 0,        -- disabled by default; user must opt in
-        blank_mode            = "wlopm",  -- "wlopm" or "cec"
-        cec_activate_on_start = true,     -- send CEC activate on startup (cec+daemon only)
-        blank_off             = nil,      -- nil = use wlopm default
-        blank_on              = nil,      -- nil = use wlopm default
+        dim_timeout           = 60,
+        blank_timeout         = 0,
+        blank_mode            = "wlopm",
+        cec_activate_on_start = true,
+        blank_off             = nil,
+        blank_on              = nil,
+        cec_poll_interval     = 5,
+        cec_poll_mode         = "http",
     },
 }
 
