@@ -55,11 +55,17 @@ func main() {
 		)
 	}
 
+	// Component-scoped loggers — filter at runtime with e.g.:
+	//   journalctl -u launchscoped | grep component=api
+	apiLog     := log.With("component", "api")
+	processLog := log.With("component", "process")
+	audioLog   := log.With("component", "audio")
+
 	// Event bus
 	bus := events.NewBus()
 
 	// Audio monitor — runs for the lifetime of the process.
-	audio.StartMonitor(context.Background(), time.Second, bus, log)
+	audio.StartMonitor(context.Background(), time.Second, bus, audioLog)
 
 	// Process manager
 	launchscopeBin := os.Getenv("LAUNCHSCOPE_BIN")
@@ -67,11 +73,11 @@ func main() {
 		launchscopeBin = "launchscope"
 	}
 
-	mgr := process.NewManager(appsLoader, launchscopeBin, bus, log)
+	mgr := process.NewManager(appsLoader, launchscopeBin, bus, processLog)
 	mgr.Start()
 
 	// HTTP server
-	router := api.NewRouter(mgr, cfgLoader, appsLoader, bus, log)
+	router := api.NewRouter(mgr, cfgLoader, appsLoader, bus, apiLog)
 	addr := fmt.Sprintf(":%d", cfg.API.Port)
 	log.Info("listening", "addr", addr)
 
