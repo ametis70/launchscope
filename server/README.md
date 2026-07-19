@@ -17,10 +17,10 @@ Daemon that manages the launchscope UI and app lifecycles through a REST API.
 
 - **Process management** — launches and monitors the LÖVE2D UI and gamescope-wrapped apps; restarts the UI when an app exits
 - **Audio** — polls PipeWire via `wpctl` and forwards volume/mute events over WebSocket
-- **CEC** — sends HDMI-CEC commands to the TV via the `cec-uinput` Unix socket
+- **CEC** — sends HDMI-CEC commands to the TV via the `launchscope-cec` Unix socket
 - **Config** — reads `config.json` and `apps.json` from `$XDG_CONFIG_HOME/launchscoped/`; auto-generates an API key if none is set
 
-[docs/API.md](docs/API.md) • [docs/Configuration.md](docs/Configuration.md)
+[docs/API.md](docs/API.md) • [docs/Configuration.md](docs/Configuration.md) • [docs/Power.md](docs/Power.md)
 
 ## Debugging
 
