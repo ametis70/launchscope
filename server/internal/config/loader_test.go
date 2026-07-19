@@ -60,7 +60,9 @@ func TestLoader_GeneratesKeyWhenMissing(t *testing.T) {
 func TestLoader_ReusesPersistedKey(t *testing.T) {
 	dir := setup(t, `{"api":{"port":8765}}`)
 	// Write a key file first.
-	os.WriteFile(filepath.Join(dir, "api_key"), []byte("persistedkey\n"), 0o600)
+	if err := os.WriteFile(filepath.Join(dir, "api_key"), []byte("persistedkey\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	l := config.NewLoader(dir)
 	cfg, err := l.Load()
@@ -75,10 +77,14 @@ func TestLoader_ReusesPersistedKey(t *testing.T) {
 func TestLoader_APIKeyFileField(t *testing.T) {
 	dir := t.TempDir()
 	keyFile := filepath.Join(dir, "my.key")
-	os.WriteFile(keyFile, []byte("filekey"), 0o600)
+	if err := os.WriteFile(keyFile, []byte("filekey"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	cfgJSON := `{"api":{"port":8765,"api_key_file":"` + keyFile + `"}}`
-	os.WriteFile(filepath.Join(dir, "config.json"), []byte(cfgJSON), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte(cfgJSON), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	l := config.NewLoader(dir)
 	cfg, err := l.Load()
@@ -96,7 +102,9 @@ func TestLoader_APIKeyFileField(t *testing.T) {
 
 func TestLoader_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "config.json"), []byte("bad json"), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte("bad json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	l := config.NewLoader(dir)
 	_, err := l.Load()
@@ -123,7 +131,9 @@ func TestLoader_Current(t *testing.T) {
 	if l.Current() != nil {
 		t.Error("Current() should be nil before Load()")
 	}
-	l.Load()
+	if _, err := l.Load(); err != nil {
+		t.Fatal(err)
+	}
 	if l.Current() == nil {
 		t.Error("Current() should be non-nil after Load()")
 	}
@@ -145,7 +155,9 @@ func TestLoader_CECConfig(t *testing.T) {
 func TestLoader_InlineKeyOverridesPersistedFile(t *testing.T) {
 	dir := setup(t, `{"api":{"port":8765,"api_key":"inlinekey"}}`)
 	// Write a persisted key — inline key in config.json should take precedence.
-	os.WriteFile(filepath.Join(dir, "api_key"), []byte("persistedkey"), 0o600)
+	if err := os.WriteFile(filepath.Join(dir, "api_key"), []byte("persistedkey"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	l := config.NewLoader(dir)
 	cfg, err := l.Load()

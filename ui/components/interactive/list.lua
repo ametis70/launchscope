@@ -53,7 +53,7 @@ function List:getSelected()
     return self.items[self.focused]
 end
 
-function List:update(dt, inp)
+function List:update(_, inp)
     local n = #self.items
     if n == 0 then
         return
@@ -159,7 +159,6 @@ function List:draw()
         self._rects[idx] = { bg_x, item_y, self.item_w, ih }
 
         if focused then
-            local bg_x = x + math.floor((w - self.item_w) / 2)
             love.graphics.setColor(T.ROW_FOCUS_BG)
             love.graphics.rectangle("fill", bg_x, item_y, self.item_w, ih, 4, 4)
         end

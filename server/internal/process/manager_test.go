@@ -12,6 +12,13 @@ import (
 	"github.com/ametis70/launchscope/server/internal/events"
 )
 
+func mustWriteFile(t *testing.T, path string, data []byte) {
+	t.Helper()
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // newTestManager builds a Manager with a fake launchscope binary that exits
 // immediately. Tests that need the UI to stay alive should override the bin.
 func newTestManager(t *testing.T, bin string) (*Manager, *events.Bus, string) {
@@ -22,10 +29,12 @@ func newTestManager(t *testing.T, bin string) (*Manager, *events.Bus, string) {
 	appsData, _ := json.Marshal([]apps.App{
 		{ID: "testapp", Name: "Test App", Exec: bin},
 	})
-	os.WriteFile(filepath.Join(dir, "apps.json"), appsData, 0o644)
+	mustWriteFile(t, filepath.Join(dir, "apps.json"), appsData)
 
 	al := apps.NewLoader(dir)
-	al.Load()
+	if _, err := al.Load(); err != nil {
+		t.Fatal(err)
+	}
 
 	bus := events.NewBus()
 	log := newNopLogger()
@@ -97,9 +106,11 @@ func TestManager_LaunchApp_Succeeds(t *testing.T) {
 		{ID: "ui", Name: "UI", Exec: stayAlive},
 		{ID: "testapp", Name: "Test App", Exec: stayAlive},
 	})
-	os.WriteFile(filepath.Join(dir, "apps.json"), appsData, 0o644)
+	mustWriteFile(t, filepath.Join(dir, "apps.json"), appsData)
 	al := apps.NewLoader(dir)
-	al.Load()
+	if _, err := al.Load(); err != nil {
+		t.Fatal(err)
+	}
 
 	bus := events.NewBus()
 	mgr2 := NewManager(al, stayAlive, bus, newNopLogger())
@@ -127,16 +138,20 @@ func TestManager_Stop_ReturnsToUIRunning(t *testing.T) {
 	appsData, _ := json.Marshal([]apps.App{
 		{ID: "testapp", Name: "Test App", Exec: stayAlive},
 	})
-	os.WriteFile(filepath.Join(dir, "apps.json"), appsData, 0o644)
+	mustWriteFile(t, filepath.Join(dir, "apps.json"), appsData)
 	al := apps.NewLoader(dir)
-	al.Load()
+	if _, err := al.Load(); err != nil {
+		t.Fatal(err)
+	}
 
 	bus := events.NewBus()
 	mgr2 := NewManager(al, stayAlive, bus, newNopLogger())
 	mgr2.Start()
 	waitState(t, mgr2, StateUIRunning, 3*time.Second)
 
-	mgr2.LaunchApp("testapp")
+	if err := mgr2.LaunchApp("testapp"); err != nil {
+		t.Fatal(err)
+	}
 	waitState(t, mgr2, StateAppRunning, 3*time.Second)
 
 	mgr2.Stop()
@@ -147,7 +162,9 @@ func TestManager_Stop_ReturnsToUIRunning(t *testing.T) {
 	if mgr2.current != nil {
 		sess := mgr2.current
 		mgr2.mu.Unlock()
-		sess.Stop(time.Second)
+		if err := sess.Stop(time.Second); err != nil {
+			t.Fatal(err)
+		}
 	} else {
 		mgr2.mu.Unlock()
 	}
@@ -161,9 +178,11 @@ func TestManager_StateChangedPublishedOnStart(t *testing.T) {
 	defer bus.Unsubscribe(ch)
 
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "apps.json"), []byte("[]"), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "apps.json"), []byte("[]"))
 	al := apps.NewLoader(dir)
-	al.Load()
+	if _, err := al.Load(); err != nil {
+		t.Fatal(err)
+	}
 
 	mgr := NewManager(al, stayAlive, bus, newNopLogger())
 	mgr.Start()

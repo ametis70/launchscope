@@ -16,6 +16,13 @@ type testVal struct {
 	Count int    `json:"count"`
 }
 
+func mustWriteFile(t *testing.T, path string, data []byte) {
+	t.Helper()
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // ── Load ─────────────────────────────────────────────────────────────────── //
 
 func TestLoad_ReadsFile(t *testing.T) {
@@ -82,7 +89,7 @@ func TestLoad_ProcessFnError(t *testing.T) {
 
 func TestLoad_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "bad.json"), []byte("{not valid json"), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "bad.json"), []byte("{not valid json"))
 
 	l := loader.New[testVal](dir, "bad.json")
 	_, err := l.Load(nil)
@@ -164,7 +171,9 @@ func TestWriteJSONAtomic_WritesCorrectly(t *testing.T) {
 
 	var got testVal
 	data, _ := os.ReadFile(path)
-	json.Unmarshal(data, &got)
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatal(err)
+	}
 	if got.Name != "written" || got.Count != 99 {
 		t.Errorf("got %+v", got)
 	}
@@ -190,8 +199,12 @@ func TestWriteJSONAtomic_Overwrites(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "out.json")
 
-	loader.WriteJSONAtomic(path, testVal{Name: "first"}, 0o644)
-	loader.WriteJSONAtomic(path, testVal{Name: "second"}, 0o644)
+	if err := loader.WriteJSONAtomic(path, testVal{Name: "first"}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := loader.WriteJSONAtomic(path, testVal{Name: "second"}, 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	got, _ := loader.ReadJSON[testVal](path)
 	if got.Name != "second" {
@@ -203,7 +216,9 @@ func TestWriteJSONAtomic_NoTempFileLeft(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "out.json")
 
-	loader.WriteJSONAtomic(path, testVal{}, 0o644)
+	if err := loader.WriteJSONAtomic(path, testVal{}, 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	entries, _ := os.ReadDir(dir)
 	for _, e := range entries {

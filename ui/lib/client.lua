@@ -9,7 +9,6 @@
 --   LAUNCHSCOPE_PORT=N     Server port (default 8765)
 
 local http = require("socket.http")
-local socket = require("socket")
 local ltn12 = require("ltn12")
 local json = require("lib.json")
 

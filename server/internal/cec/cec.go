@@ -76,7 +76,7 @@ func (c *Client) send(cmd string) error {
 	if err != nil {
 		return fmt.Errorf("cannot connect to launchscope-cec socket %s: %w", socketPath, err)
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 	if err := conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
 		return fmt.Errorf("setting deadline on cec socket: %w", err)
 	}

@@ -44,7 +44,7 @@ func (ws *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("ws upgrade failed", "err", err)
 		return
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 
 	// Read loop: detect client disconnect (we don't expect client messages).
 	disconnected := make(chan struct{})

@@ -87,7 +87,9 @@ func TestAppsLoader_Current(t *testing.T) {
 	if l.Current() != nil {
 		t.Error("Current() should be nil before Load()")
 	}
-	l.Load()
+	if _, err := l.Load(); err != nil {
+		t.Fatal(err)
+	}
 	if l.Current() == nil {
 		t.Error("Current() should be non-nil after Load()")
 	}
@@ -95,7 +97,9 @@ func TestAppsLoader_Current(t *testing.T) {
 
 func TestAppsLoader_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "apps.json"), []byte("not json"), 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "apps.json"), []byte("not json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	l := apps.NewLoader(dir)
 	_, err := l.Load()

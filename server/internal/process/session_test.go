@@ -87,7 +87,7 @@ func TestSession_PidPositive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer sess.Stop(time.Second)
+	defer func() { _ = sess.Stop(time.Second) }()
 
 	if sess.Pid() <= 0 {
 		t.Errorf("Pid() = %d, expected > 0", sess.Pid())
