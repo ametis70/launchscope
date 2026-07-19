@@ -445,6 +445,6 @@ func TestSplitExec_ReturnsStringSlice(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var _ []string = got
+	var _ = got
 	_ = strings.Join(got, " ")
 }

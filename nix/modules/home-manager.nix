@@ -117,10 +117,10 @@ let
     };
   };
 
-  gamescopeOpts = {...}: {options = gamescopeBaseOptions;};
+  gamescopeOpts = _: {options = gamescopeBaseOptions;};
 
   # Per-app gamescope adds an 'enabled' toggle.
-  gamescopeAppOpts = {...}: {
+  gamescopeAppOpts = _: {
     options =
       gamescopeBaseOptions
       // {
@@ -131,7 +131,7 @@ let
       };
   };
 
-  appOpts = {...}: {
+  appOpts = _: {
     options = {
       id = lib.mkOption {type = lib.types.strMatching "[a-z0-9_-]+";};
       name = lib.mkOption {type = lib.types.str;};

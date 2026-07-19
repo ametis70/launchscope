@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
+from tests.conftest import STATUS_APP_RUNNING, STATUS_IDLE
 
 from custom_components.launchscope.button import (
     LaunchscopeCECActivateButton,
@@ -12,7 +12,6 @@ from custom_components.launchscope.button import (
     LaunchscopeCECSwitchInputButton,
     LaunchscopeStopButton,
 )
-from tests.conftest import STATUS_APP_RUNNING, STATUS_IDLE
 
 
 def make_button(cls, data):

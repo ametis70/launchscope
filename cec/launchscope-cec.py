@@ -35,16 +35,17 @@ Configuration via environment variables:
                          (default: http://127.0.0.1:8765)
 """
 
-import cec
 import json
 import os
 import socket
 import sys
-import struct
 import threading
 import urllib.request
 
-from evdev import UInput, ecodes as e
+from evdev import UInput
+from evdev import ecodes as e
+
+import cec
 
 SOCKET_PATH = "/run/launchscope-cec/cmd.sock"
 
@@ -254,7 +255,7 @@ def do_power_on():
     # Send TextViewOn (0x0d) to TV — this is what the Chromecast sends.
     # ImageViewOn (0x04) is technically correct per spec but some displays
     # only wake on TextViewOn.
-    cec.transmit(CEC_TV, cec.CEC_OPCODE_TEXT_VIEW_ON, bytes())
+    cec.transmit(CEC_TV, cec.CEC_OPCODE_TEXT_VIEW_ON, b"")
 
 
 def do_report_physical_addr():
@@ -369,7 +370,7 @@ def socket_server():
                 for line in data.splitlines():
                     if line.strip():
                         handle_command(line)
-        except socket.timeout:
+        except TimeoutError:
             continue
         except Exception as ex:
             print(f"launchscope-cec: socket error: {ex}", flush=True)

@@ -5,9 +5,9 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
+from tests.conftest import ENTRY_DATA, make_response
 
 from custom_components.launchscope.const import CONF_API_KEY, CONF_HOST, CONF_PORT, DOMAIN
-from tests.conftest import ENTRY_DATA, make_response
 
 
 @pytest.fixture(autouse=True)
