@@ -1,11 +1,11 @@
 <div align="center">
 
-# cec-uinput
+# launchscope-cec
 
 ![license](https://img.shields.io/github/license/ametis70/launchscope?style=flat-square)
 ![python](https://img.shields.io/badge/python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)
 
-HDMI-CEC to uinput bridge for [Pulse-Eight USB CEC adapters](https://www.pulse-eight.com/p/104/usb-hdmi-cec-adapter)
+HDMI-CEC bridge for [Pulse-Eight USB CEC adapters](https://www.pulse-eight.com/p/104/usb-hdmi-cec-adapter)
 
 <br>
 
@@ -13,10 +13,22 @@ HDMI-CEC to uinput bridge for [Pulse-Eight USB CEC adapters](https://www.pulse-e
 
 ## Overview
 
-`cec-uinput` maintains a persistent connection to a Pulse-Eight USB CEC adapter via [libcec](https://github.com/Pulse-Eight/libcec) and does two things:
+`launchscope-cec` maintains a persistent connection to a Pulse-Eight USB CEC adapter via [libcec](https://github.com/Pulse-Eight/libcec) and provides bidirectional HDMI-CEC integration with Launchscope:
 
-- **Input** — forwards TV remote key presses as uinput keyboard events, making the remote appear as a standard keyboard to all applications
-- **Output** — listens on a Unix socket at `/run/cec-uinput/cmd.sock` for commands from `launchscoped`
+- **Remote input** — forwards TV remote key presses as uinput keyboard events, making the remote appear as a standard keyboard to all applications
+- **CEC commands** — listens on a Unix socket at `/run/launchscope-cec/cmd.sock` for outgoing commands from `launchscoped` (power on, standby, set active source)
+- **State reporting** — monitors the CEC bus for device power status and active source changes, pushing live state to `launchscoped` via HTTP so the UI can react (stop rendering when TV is off or input is switched away)
+
+### State tracking
+
+`launchscope-cec` watches incoming CEC bus traffic to maintain the following state, pushed to `launchscoped` on every change:
+
+| Field | Source |
+|---|---|
+| `tv_on` | `ReportPowerStatus` (0x90) from TV / `Standby` (0x36) from TV |
+| `avr_on` | `SetSystemAudioMode` (0x72) from AVR (`0x01` = on, `0x00` = off) / TV standby implicitly powers off AVR |
+| `active_source` | `ActiveSource` (0x82) broadcast / `RoutingChange` (0x80) from AVR |
+| `is_active_source` | whether `active_source` is the host PC (logical address 1) |
 
 ## Dependencies
 
@@ -29,34 +41,36 @@ HDMI-CEC to uinput bridge for [Pulse-Eight USB CEC adapters](https://www.pulse-e
 
 Two topologies are supported:
 
-**PC → TV directly (no AVR):** set `CEC_AVR_DEVICE` to empty. `power-on` and `standby` go to the TV only.
+**PC → TV directly (no AVR):** set `CEC_HAS_AVR=0`. `standby` goes to the TV directly.
 
-**PC → AVR → TV:** set `CEC_AVR_DEVICE = 5`. `power-on` goes to both TV and AVR. `standby` goes to the AVR only — the TV powers off automatically when the signal drops.
+**PC → AVR → TV:** set `CEC_HAS_AVR=1` (default). `standby` goes to the AVR only — the TV powers off automatically when the signal drops.
 
 All configuration is via environment variables:
 
 | Variable | Default | Description |
 |---|---|---|
-| `CEC_TV_DEVICE` | `0` | Logical CEC address of the TV/projector. Always 0 per the CEC spec. |
-| `CEC_AVR_DEVICE` | `5` | Logical CEC address of the AVR. Leave empty if there is no AVR. |
-| `CEC_SOURCE_PORT` | `1` | HDMI port on the AVR (or TV if no AVR) the host PC is connected to. Used by libcec to resolve the adapter's physical address. |
-| `CEC_SOURCE_ADDR` | `""` | Physical CEC address of the host PC, e.g. `1.6.0.0`. Run `echo 'scan' \| cec-client -s -d 1` to discover. |
+| `CEC_HAS_AVR` | `1` | Set to `1` if an AVR is present. Standby goes to AVR only (TV powers off via signal loss). Set to `0` for direct PC→TV with no AVR. The AVR logical address is always 5 per the CEC spec. |
+| `CEC_SOURCE_ADDR` | _(required)_ | Physical CEC address of the host PC, e.g. `1.6.0.0`. Run `echo 'scan' \| cec-client -s -d 1` to discover. |
 | `CEC_VERBOSE` | `0` | Set to `1` to enable verbose libcec logging. |
+| `LAUNCHSCOPE_SERVER_URL` | `http://127.0.0.1:8765` | URL of `launchscoped` for pushing CEC state. |
 
 ## Socket commands
 
-| Command | Description |
-|---|---|
-| `power-on` | Power on TV (and AVR if configured) |
-| `set-source` | Broadcast `ActiveSource` with `CEC_SOURCE_ADDR` — switches input to the host PC |
-| `standby` | Standby the AVR (or TV if no AVR) |
-| `activate` | `ImageViewOn` to TV + broadcast `ActiveSource` |
+Send commands to the Unix socket to control the display:
 
 ```bash
-echo "activate"   | socat - UNIX-CONNECT:/run/cec-uinput/cmd.sock
-echo "standby"    | socat - UNIX-CONNECT:/run/cec-uinput/cmd.sock
-echo "set-source" | socat - UNIX-CONNECT:/run/cec-uinput/cmd.sock
+echo "activate"   | socat - UNIX-CONNECT:/run/launchscope-cec/cmd.sock
+echo "standby"    | socat - UNIX-CONNECT:/run/launchscope-cec/cmd.sock
+echo "set-source" | socat - UNIX-CONNECT:/run/launchscope-cec/cmd.sock
+echo "power-on"   | socat - UNIX-CONNECT:/run/launchscope-cec/cmd.sock
 ```
+
+| Command | Description |
+|---|---|
+| `activate` | `ReportPhysicalAddress` + `DeviceVendorID` + `TextViewOn` + `ActiveSource` — full wake + input switch |
+| `power-on` | `TextViewOn` to TV only — wake without switching input |
+| `set-source` | Broadcast `ActiveSource` — switch input without waking |
+| `standby` | Standby the AVR (or TV if no AVR). Skipped if host PC is not the active source. |
 
 ## Key mapping
 
@@ -84,32 +98,29 @@ Enable via the launchscope NixOS module:
 services.launchscope.cec = {
   enable        = true;
   adapterDevice = "ttyACM0";
-  tvDevice      = 0;
-  avrDevice     = 5;
-  sourcePort    = 6;   # HDMI port on the AVR the host PC is connected to
-  sourceAddr    = "1.6.0.0";  # physical address of the host PC
+  hasAvr        = true;    # set to false for direct PC→TV with no AVR
+  sourceAddr    = "1.6.0.0";
 };
 ```
 
 ### systemd (non-Nix)
 
-Install the dependencies, then create `/etc/systemd/system/cec-uinput.service`:
+Install the dependencies, then create `/etc/systemd/system/launchscope-cec.service`:
 
 ```ini
 [Unit]
-Description=HDMI-CEC to uinput bridge (Pulse-Eight adapter)
+Description=HDMI-CEC bridge (Pulse-Eight adapter)
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/cec-uinput.py
+ExecStart=/usr/local/bin/launchscope-cec.py
 Restart=on-failure
-RuntimeDirectory=cec-uinput
+RuntimeDirectory=launchscope-cec
 SupplementaryGroups=dialout input
-Environment=CEC_TV_DEVICE=0
-Environment=CEC_AVR_DEVICE=5
-Environment=CEC_SOURCE_PORT=6
+Environment=CEC_HAS_AVR=1
 Environment=CEC_SOURCE_ADDR=1.6.0.0
 Environment=CEC_VERBOSE=0
+Environment=LAUNCHSCOPE_SERVER_URL=http://127.0.0.1:8765
 
 [Install]
 WantedBy=multi-user.target
@@ -120,31 +131,29 @@ The user running the service needs to be in the `dialout` group (serial port acc
 To give the virtual device a stable path at `/dev/input/cec-remote`, add a udev rule:
 
 ```
-# /etc/udev/rules.d/99-cec-uinput.rules
-KERNEL=="event*", ATTRS{name}=="cec-uinput", SYMLINK+="input/cec-remote", MODE="0664", GROUP="input"
+# /etc/udev/rules.d/99-launchscope-cec.rules
+KERNEL=="event*", ATTRS{name}=="launchscope-cec", SYMLINK+="input/cec-remote", MODE="0664", GROUP="input"
 ```
 
 Enable and start:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now cec-uinput
+sudo systemctl enable --now launchscope-cec
 ```
 
-## Finding `baseDevice` and `hdmiPort`
+## Finding your physical address
 
-Run a CEC bus scan to discover the logical and physical addresses of connected devices:
+Run a CEC bus scan to discover the logical and physical addresses of all connected devices:
 
 ```bash
 echo 'scan' | cec-client -s -d 1
 ```
 
-The output lists all devices with their logical address (`device #N`) and physical address (`X.Y.0.0`):
+The output lists each device with its logical address (`device #N`) and physical address (`X.Y.0.0`). Your host PC's physical address depends on the topology:
 
-- **Direct to TV** — `baseDevice = 0`, `hdmiPort` = the first non-zero digit in your device's physical address (e.g. `2.0.0.0` → port 2)
-- **Through an AVR** — `baseDevice = 5` (Audio system logical address), `hdmiPort` = the second digit (e.g. `1.6.0.0` → port 6 on the AVR)
-
-Set `standbyAddr` to the same value as `baseDevice` in most cases.
+- **Direct to TV** — `sourceAddr` = `X.0.0.0` where X is the HDMI port number on the TV
+- **Through AVR** — `sourceAddr` = `1.X.0.0` where X is the HDMI port number on the AVR (the AVR is always at port 1 on the TV)
 
 ## Polkit — power actions
 

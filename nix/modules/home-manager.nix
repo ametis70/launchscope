@@ -230,7 +230,7 @@ in
         enabled = lib.mkOption {
           type = lib.types.bool;
           default = false;
-          description = "Enable HDMI-CEC control via the cec-uinput socket.";
+          description = "Enable HDMI-CEC control via the launchscope-cec socket.";
         };
       };
 
