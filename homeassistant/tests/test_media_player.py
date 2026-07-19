@@ -1,4 +1,5 @@
 """Tests for media player entity."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, call, patch
@@ -29,6 +30,7 @@ def make_player(data, apps=None):
 
 # ── state ────────────────────────────────────────────────────────────────── #
 
+
 def test_state_app_running():
     player = make_player(STATUS_APP_RUNNING)
     assert player.state == MediaPlayerState.ON
@@ -50,6 +52,7 @@ def test_state_unknown_string():
 
 
 # ── source / app ─────────────────────────────────────────────────────────── #
+
 
 def test_source_app_running():
     player = make_player(STATUS_APP_RUNNING)
@@ -77,6 +80,7 @@ def test_source_list_empty():
 
 
 # ── volume ───────────────────────────────────────────────────────────────── #
+
 
 def test_volume_level():
     player = make_player(STATUS_IDLE)
@@ -112,36 +116,29 @@ def test_is_volume_muted_no_audio():
 
 # ── actions ──────────────────────────────────────────────────────────────── #
 
+
 async def test_set_volume_level():
     player = make_player(STATUS_IDLE)
     await player.async_set_volume_level(0.8)
-    player.coordinator.async_post.assert_awaited_once_with(
-        "/api/audio/volume", {"value": 0.8}
-    )
+    player.coordinator.async_post.assert_awaited_once_with("/api/audio/volume", {"value": 0.8})
 
 
 async def test_mute_volume():
     player = make_player(STATUS_IDLE)
     await player.async_mute_volume(True)
-    player.coordinator.async_post.assert_awaited_once_with(
-        "/api/audio/mute", {"muted": True}
-    )
+    player.coordinator.async_post.assert_awaited_once_with("/api/audio/mute", {"muted": True})
 
 
 async def test_volume_up():
     player = make_player(STATUS_IDLE)
     await player.async_volume_up()
-    player.coordinator.async_post.assert_awaited_once_with(
-        "/api/audio/volume", {"delta": 0.05}
-    )
+    player.coordinator.async_post.assert_awaited_once_with("/api/audio/volume", {"delta": 0.05})
 
 
 async def test_volume_down():
     player = make_player(STATUS_IDLE)
     await player.async_volume_down()
-    player.coordinator.async_post.assert_awaited_once_with(
-        "/api/audio/volume", {"delta": -0.05}
-    )
+    player.coordinator.async_post.assert_awaited_once_with("/api/audio/volume", {"delta": -0.05})
 
 
 async def test_media_stop():
@@ -152,6 +149,7 @@ async def test_media_stop():
 
 
 # ── select_source ─────────────────────────────────────────────────────────  #
+
 
 async def test_select_source_known_app():
     player = make_player(STATUS_IDLE, apps=APPS_LIST)

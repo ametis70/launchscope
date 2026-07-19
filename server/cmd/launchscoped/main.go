@@ -57,9 +57,9 @@ func main() {
 
 	// Component-scoped loggers — filter at runtime with e.g.:
 	//   journalctl -u launchscoped | grep component=api
-	apiLog     := log.With("component", "api")
+	apiLog := log.With("component", "api")
 	processLog := log.With("component", "process")
-	audioLog   := log.With("component", "audio")
+	audioLog := log.With("component", "audio")
 
 	// Event bus
 	bus := events.NewBus()

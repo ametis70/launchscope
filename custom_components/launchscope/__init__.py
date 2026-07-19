@@ -1,4 +1,5 @@
 """Launchscope Home Assistant integration."""
+
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
@@ -14,7 +15,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         host=entry.data["host"],
         port=entry.data["port"],
         api_key=entry.data["api_key"],
-        scan_interval=entry.options.get(CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)),
+        scan_interval=entry.options.get(
+            CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        ),
     )
     await coordinator.async_config_entry_first_refresh()
 

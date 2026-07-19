@@ -10,9 +10,9 @@
 
 local M = {}
 
-local _navigate = nil   -- love.Source
-local _select   = nil   -- love.Source
-local _volume   = 1.0
+local _navigate = nil -- love.Source
+local _select = nil -- love.Source
+local _volume = 1.0
 
 local function loadSource(path)
     local ok, src = pcall(love.audio.newSource, path, "static")
@@ -24,9 +24,9 @@ local function loadSource(path)
 end
 
 function M.load(ui_volume)
-    _volume   = ui_volume or 1.0
+    _volume = ui_volume or 1.0
     _navigate = loadSource("assets/sound/Abstract1.wav")
-    _select   = loadSource("assets/sound/Abstract2.wav")
+    _select = loadSource("assets/sound/Abstract2.wav")
     M.setVolume(_volume)
 
     -- Pre-warm the audio backend: play both sources at volume 0 so the
@@ -45,8 +45,12 @@ end
 
 function M.setVolume(v)
     _volume = math.max(0.0, math.min(1.0, v))
-    if _navigate then _navigate:setVolume(_volume) end
-    if _select   then _select:setVolume(_volume)   end
+    if _navigate then
+        _navigate:setVolume(_volume)
+    end
+    if _select then
+        _select:setVolume(_volume)
+    end
 end
 
 function M.getVolume()
@@ -54,14 +58,20 @@ function M.getVolume()
 end
 
 local function play(src)
-    if not src or _volume == 0 then return end
+    if not src or _volume == 0 then
+        return
+    end
     -- Stop and rewind so rapid navigation doesn't queue up.
     src:stop()
     src:seek(0)
     src:play()
 end
 
-function M.navigate() play(_navigate) end
-function M.select()   play(_select)   end
+function M.navigate()
+    play(_navigate)
+end
+function M.select()
+    play(_select)
+end
 
 return M

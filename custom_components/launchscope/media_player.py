@@ -1,4 +1,5 @@
 """Media player entity for Launchscope."""
+
 from __future__ import annotations
 
 import asyncio
@@ -45,11 +46,11 @@ class LaunchscopeMediaPlayer(CoordinatorEntity, MediaPlayerEntity):
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id          = f"{entry.entry_id}_media_player"
-        self._attr_name               = "Launchscope"
-        self._attr_icon               = "mdi:television-play"
+        self._attr_unique_id = f"{entry.entry_id}_media_player"
+        self._attr_name = "Launchscope"
+        self._attr_icon = "mdi:television-play"
         self._attr_supported_features = SUPPORTED
-        self._attr_device_info        = {
+        self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": "Launchscope",
             "manufacturer": "Launchscope",
@@ -72,8 +73,9 @@ class LaunchscopeMediaPlayer(CoordinatorEntity, MediaPlayerEntity):
                     apps = await resp.json()
                     if apps != self._apps:
                         self._apps = apps
-                        _LOGGER.debug("Loaded %d apps: %s", len(self._apps),
-                                      [a["name"] for a in self._apps])
+                        _LOGGER.debug(
+                            "Loaded %d apps: %s", len(self._apps), [a["name"] for a in self._apps]
+                        )
                 else:
                     _LOGGER.warning("GET /api/apps returned HTTP %s", resp.status)
         except Exception as err:
@@ -140,16 +142,13 @@ class LaunchscopeMediaPlayer(CoordinatorEntity, MediaPlayerEntity):
         await self.coordinator.async_post("/api/audio/volume", {"delta": -0.05})
 
     async def async_select_source(self, source: str) -> None:
-        app_id = next(
-            (a["id"] for a in self._apps if a["name"] == source), None
-        )
+        app_id = next((a["id"] for a in self._apps if a["name"] == source), None)
         if not app_id:
-            _LOGGER.error("Unknown source '%s', available: %s",
-                          source, [a["name"] for a in self._apps])
-            await self._fetch_apps()
-            app_id = next(
-                (a["id"] for a in self._apps if a["name"] == source), None
+            _LOGGER.error(
+                "Unknown source '%s', available: %s", source, [a["name"] for a in self._apps]
             )
+            await self._fetch_apps()
+            app_id = next((a["id"] for a in self._apps if a["name"] == source), None)
             if not app_id:
                 return
         await self.coordinator.async_post(f"/api/launch/{app_id}")

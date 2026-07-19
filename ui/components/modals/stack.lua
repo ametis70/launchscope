@@ -39,7 +39,9 @@ end
 -- Returns the full stack as an ordered list (index 1 = bottom, last = top).
 function M.all()
     local t = {}
-    for i = 1, #_stack do t[i] = _stack[i] end
+    for i = 1, #_stack do
+        t[i] = _stack[i]
+    end
     return t
 end
 
@@ -47,7 +49,9 @@ end
 -- The modal is responsible for calling index.popModal() (via on_close) when done.
 function M.update(inp)
     local top = _stack[#_stack]
-    if top then top:update(inp) end
+    if top then
+        top:update(inp)
+    end
 end
 
 -- Draw all modals bottom-up (topmost last, on top).

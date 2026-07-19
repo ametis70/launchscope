@@ -19,45 +19,45 @@ local M = {}
 
 -- ── Unicode codepoints (Nerd Font) ────────────────────────────────────── --
 local UNICODE = {
-    clock    = "󰥔 ",
+    clock = "󰥔 ",
     calendar = "󰃭 ",
-    volume   = "󰕾 ",
-    mute     = "󰖁 ",
-    power    = "󰐥 ",
+    volume = "󰕾 ",
+    mute = "󰖁 ",
+    power = "󰐥 ",
     settings = "󰒓 ",
-    reload   = "󰑐 ",
-    close    = "󰅙 ",
-    back     = "󰁮 ",
-    confirm  = "󰄬 ",
-    cancel   = "󰅖 ",
-    delete   = "󰆴 ",
-    plus     = "󰐕 ",
-    minus    = "󰍴 ",
+    reload = "󰑐 ",
+    close = "󰅙 ",
+    back = "󰁮 ",
+    confirm = "󰄬 ",
+    cancel = "󰅖 ",
+    delete = "󰆴 ",
+    plus = "󰐕 ",
+    minus = "󰍴 ",
 }
 
 -- ── PNG asset filenames ────────────────────────────────────────────────── --
 local PNG_FILES = {
-    clock    = "assets/icons/clock.png",
+    clock = "assets/icons/clock.png",
     calendar = "assets/icons/calendar.png",
-    volume   = "assets/icons/volume.png",
-    mute     = "assets/icons/mute.png",
-    power    = "assets/icons/power.png",
+    volume = "assets/icons/volume.png",
+    mute = "assets/icons/mute.png",
+    power = "assets/icons/power.png",
     settings = "assets/icons/settings.png",
-    reload   = "assets/icons/reload.png",
-    close    = "assets/icons/close.png",
-    back     = "assets/icons/back.png",
-    confirm  = "assets/icons/confirm.png",
-    cancel   = "assets/icons/cancel.png",
-    delete   = "assets/icons/delete.png",
-    plus     = "assets/icons/plus.png",
-    minus    = "assets/icons/minus.png",
+    reload = "assets/icons/reload.png",
+    close = "assets/icons/close.png",
+    back = "assets/icons/back.png",
+    confirm = "assets/icons/confirm.png",
+    cancel = "assets/icons/cancel.png",
+    delete = "assets/icons/delete.png",
+    plus = "assets/icons/plus.png",
+    minus = "assets/icons/minus.png",
 }
 
 -- ── State ─────────────────────────────────────────────────────────────── --
-local _mode  = "unicode"
-local _size  = 32
-local _font  = nil
-local _cache = {}   -- [name] = love.Image (png mode)
+local _mode = "unicode"
+local _size = 32
+local _font = nil
+local _cache = {} -- [name] = love.Image (png mode)
 
 -- ── PNG loader ────────────────────────────────────────────────────────── --
 
@@ -75,9 +75,9 @@ end
 -- ── Public API ────────────────────────────────────────────────────────── --
 
 function M.init(mode, size, font)
-    _mode  = mode or "unicode"
-    _size  = size or 32
-    _font  = font
+    _mode = mode or "unicode"
+    _size = size or 32
+    _font = font
     _cache = {}
 end
 
@@ -88,7 +88,9 @@ end
 function M.draw(name, x, y, r, g, b, a, font_override)
     r, g, b, a = r or 1, g or 1, b or 1, a or 1
 
-    if _mode == "none" then return 0 end
+    if _mode == "none" then
+        return 0
+    end
 
     if _mode == "pixel" then
         if _cache[name] == nil then
@@ -111,8 +113,10 @@ function M.draw(name, x, y, r, g, b, a, font_override)
 
     -- Unicode mode (or PNG fallback).
     local glyph = UNICODE[name]
-    local font  = font_override or _font
-    if not glyph or not font then return 0 end
+    local font = font_override or _font
+    if not glyph or not font then
+        return 0
+    end
     love.graphics.setFont(font)
     love.graphics.setColor(r, g, b, a)
     love.graphics.print(glyph, x, y)
@@ -122,25 +126,35 @@ end
 
 -- width returns the horizontal space the icon will occupy.
 function M.width(name, font_override)
-    if _mode == "none" then return 0 end
+    if _mode == "none" then
+        return 0
+    end
     if _mode == "pixel" then
         if _cache[name] == nil then
             local path = PNG_FILES[name]
             _cache[name] = path and loadPNG(path) or false
         end
-        if _cache[name] then return _size end
+        if _cache[name] then
+            return _size
+        end
     end
     local glyph = UNICODE[name]
-    local font  = font_override or _font
-    if not glyph or not font then return 0 end
+    local font = font_override or _font
+    if not glyph or not font then
+        return 0
+    end
     return font:getWidth(glyph)
 end
 
 -- height returns the icon height in pixels.
 function M.height(font_override)
-    if _mode == "pixel" then return _size end
+    if _mode == "pixel" then
+        return _size
+    end
     local font = font_override or _font
-    if font then return font:getHeight() end
+    if font then
+        return font:getHeight()
+    end
     return _size
 end
 

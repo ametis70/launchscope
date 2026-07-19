@@ -140,8 +140,8 @@ func parseVolume(s, sinkName string) (State, error) {
 // parseInspectDescription extracts the node.description value from
 // `wpctl inspect` output. Lines look like:
 //
-//	  * node.description = "Built-in Audio Digital Surround 5.1 (HDMI)"
-//	    node.description = "Some Sink"
+//   - node.description = "Built-in Audio Digital Surround 5.1 (HDMI)"
+//     node.description = "Some Sink"
 //
 // The asterisk prefix marks the active/default property; both forms are handled.
 func parseInspectDescription(s string) string {

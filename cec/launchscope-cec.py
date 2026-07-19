@@ -48,13 +48,13 @@ from evdev import UInput, ecodes as e
 
 SOCKET_PATH = "/run/launchscope-cec/cmd.sock"
 
-CEC_TV             = 0  # always 0 per CEC spec (TV logical address)
-CEC_AVR_LOGICAL    = 5  # always 5 per CEC spec (Audio System logical address)
-CEC_AVR            = CEC_AVR_LOGICAL if os.environ.get("CEC_HAS_AVR", "1") == "1" else None
-CEC_SOURCE_ADDR    = os.environ.get("CEC_SOURCE_ADDR", "")
-CEC_VERBOSE        = os.environ.get("CEC_VERBOSE", "0") == "1"
-SERVER_URL         = os.environ.get("LAUNCHSCOPE_SERVER_URL", "http://127.0.0.1:8765")
-SERVER_API_KEY     = os.environ.get("LAUNCHSCOPE_API_KEY", "")
+CEC_TV = 0  # always 0 per CEC spec (TV logical address)
+CEC_AVR_LOGICAL = 5  # always 5 per CEC spec (Audio System logical address)
+CEC_AVR = CEC_AVR_LOGICAL if os.environ.get("CEC_HAS_AVR", "1") == "1" else None
+CEC_SOURCE_ADDR = os.environ.get("CEC_SOURCE_ADDR", "")
+CEC_VERBOSE = os.environ.get("CEC_VERBOSE", "0") == "1"
+SERVER_URL = os.environ.get("LAUNCHSCOPE_SERVER_URL", "http://127.0.0.1:8765")
+SERVER_API_KEY = os.environ.get("LAUNCHSCOPE_API_KEY", "")
 
 OWN_LOGICAL = 1  # libcec always registers as Recorder 1
 
@@ -66,7 +66,7 @@ CEC_KEYMAP = {
     0x03: e.KEY_LEFT,
     0x04: e.KEY_RIGHT,
     0x09: e.KEY_HOME,
-    0x0d: e.KEY_ESC,
+    0x0D: e.KEY_ESC,
     0x20: e.KEY_0,
     0x21: e.KEY_1,
     0x22: e.KEY_2,
@@ -83,11 +83,11 @@ CEC_KEYMAP = {
     0x46: e.KEY_PAUSE,
     0x47: e.KEY_RECORD,
     0x49: e.KEY_REWIND,
-    0x4a: e.KEY_FASTFORWARD,
-    0x4c: e.KEY_NEXTSONG,
-    0x4d: e.KEY_PREVIOUSSONG,
+    0x4A: e.KEY_FASTFORWARD,
+    0x4C: e.KEY_NEXTSONG,
+    0x4D: e.KEY_PREVIOUSSONG,
     0x60: e.KEY_INFO,
-    0x6a: e.KEY_POWER,
+    0x6A: e.KEY_POWER,
     0x71: e.KEY_BLUE,
     0x72: e.KEY_RED,
     0x73: e.KEY_GREEN,
@@ -95,28 +95,41 @@ CEC_KEYMAP = {
 }
 
 CEC_NAMES = {
-    0x00: "Select",  0x01: "Up",     0x02: "Down",   0x03: "Left",
-    0x04: "Right",   0x09: "Home",   0x0d: "Exit",
-    0x44: "Play",    0x46: "Pause",  0x49: "Rewind", 0x4a: "FastFwd",
-    0x4c: "Next",    0x4d: "Prev",
-    0x71: "Blue",    0x72: "Red",    0x73: "Green",  0x74: "Yellow",
+    0x00: "Select",
+    0x01: "Up",
+    0x02: "Down",
+    0x03: "Left",
+    0x04: "Right",
+    0x09: "Home",
+    0x0D: "Exit",
+    0x44: "Play",
+    0x46: "Pause",
+    0x49: "Rewind",
+    0x4A: "FastFwd",
+    0x4C: "Next",
+    0x4D: "Prev",
+    0x71: "Blue",
+    0x72: "Red",
+    0x73: "Green",
+    0x74: "Yellow",
 }
 
-ui          = None
+ui = None
 pressed_key = None
 
 # ── CEC state ─────────────────────────────────────────────────────────────── #
-_state_lock        = threading.Lock()
-_tv_on             = False
-_avr_on            = False
-_active_source     = None    # logical addr (int) of current active source, or None
-_is_active_source  = False   # _active_source == OWN_LOGICAL
+_state_lock = threading.Lock()
+_tv_on = False
+_avr_on = False
+_active_source = None  # logical addr (int) of current active source, or None
+_is_active_source = False  # _active_source == OWN_LOGICAL
 
 # Physical address (2-byte big-endian hex) → logical address.
 # Populated from environment + known fixed addresses.
 _PHYS_TO_LOGICAL: dict[bytes, int] = {
-    bytes.fromhex("0000"): 0,   # TV always 0.0.0.0
+    bytes.fromhex("0000"): 0,  # TV always 0.0.0.0
 }
+
 
 def _build_phys_map():
     """Populate _PHYS_TO_LOGICAL from configured addresses."""
@@ -135,9 +148,9 @@ def on_source_activated(event, logical_addr, activated):
 def on_command(event, cmd):
     """Track active source and power state from incoming CEC commands."""
     global _active_source, _is_active_source, _tv_on, _avr_on
-    opcode    = cmd.get("opcode")
+    opcode = cmd.get("opcode")
     initiator = cmd.get("initiator")
-    params    = cmd.get("parameters", b"")
+    params = cmd.get("parameters", b"")
 
     # TV power ON — ReportPowerStatus (0x90) from TV with params=0x00
     if opcode == 0x90 and initiator == CEC_TV and params and params[0] == 0x00:
@@ -153,7 +166,7 @@ def on_command(event, cmd):
         with _state_lock:
             if not _tv_on and not _avr_on:
                 return
-            _tv_on  = False
+            _tv_on = False
             _avr_on = False
         print("launchscope-cec: TV standby — marking AVR off too", flush=True)
         push_state()
@@ -175,9 +188,12 @@ def on_command(event, cmd):
         with _state_lock:
             if _active_source == initiator:
                 return
-            _active_source    = initiator
-            _is_active_source = (initiator == OWN_LOGICAL)
-        print(f"launchscope-cec: active source → logical {initiator} (us={_is_active_source})", flush=True)
+            _active_source = initiator
+            _is_active_source = initiator == OWN_LOGICAL
+        print(
+            f"launchscope-cec: active source → logical {initiator} (us={_is_active_source})",
+            flush=True,
+        )
         push_state()
 
     # RoutingChange (0x80) from AVR — new physical addr in params[2:4]
@@ -185,15 +201,18 @@ def on_command(event, cmd):
         if len(params) < 4:
             return
         new_phys = bytes(params[2:4])
-        logical  = _PHYS_TO_LOGICAL.get(new_phys)
+        logical = _PHYS_TO_LOGICAL.get(new_phys)
         if logical is None:
             return  # unknown/dummy device — ignore
         with _state_lock:
             if _active_source == logical:
                 return
-            _active_source    = logical
-            _is_active_source = (logical == OWN_LOGICAL)
-        print(f"launchscope-cec: routing change → physical {new_phys.hex()} logical {logical}", flush=True)
+            _active_source = logical
+            _is_active_source = logical == OWN_LOGICAL
+        print(
+            f"launchscope-cec: routing change → physical {new_phys.hex()} logical {logical}",
+            flush=True,
+        )
         push_state()
 
 
@@ -201,9 +220,9 @@ def push_state():
     """POST current CEC state to the Go server."""
     with _state_lock:
         payload = {
-            "tv_on":           _tv_on,
-            "avr_on":          _avr_on,
-            "active_source":   _active_source,
+            "tv_on": _tv_on,
+            "avr_on": _avr_on,
+            "active_source": _active_source,
             "is_active_source": _is_active_source,
         }
     body = json.dumps(payload).encode()
@@ -242,17 +261,24 @@ def do_report_physical_addr():
     if not CEC_SOURCE_ADDR:
         return
     addr_bytes = parse_physical_addr(CEC_SOURCE_ADDR)
-    cec.transmit(cec.CECDEVICE_BROADCAST, cec.CEC_OPCODE_REPORT_PHYSICAL_ADDRESS, addr_bytes + bytes([0x04]))
+    cec.transmit(
+        cec.CECDEVICE_BROADCAST, cec.CEC_OPCODE_REPORT_PHYSICAL_ADDRESS, addr_bytes + bytes([0x04])
+    )
 
 
 def do_device_vendor_id():
-    cec.transmit(cec.CECDEVICE_BROADCAST, cec.CEC_OPCODE_DEVICE_VENDOR_ID, bytes([0x00, 0x15, 0x82]))
+    cec.transmit(
+        cec.CECDEVICE_BROADCAST, cec.CEC_OPCODE_DEVICE_VENDOR_ID, bytes([0x00, 0x15, 0x82])
+    )
 
 
 def do_set_source():
     global _active_source, _is_active_source
     if not CEC_SOURCE_ADDR:
-        print("launchscope-cec: set-source — CEC_SOURCE_ADDR not set, falling back to set_active_source()", flush=True)
+        print(
+            "launchscope-cec: set-source — CEC_SOURCE_ADDR not set, falling back to set_active_source()",
+            flush=True,
+        )
         cec.set_active_source()
     else:
         addr_bytes = parse_physical_addr(CEC_SOURCE_ADDR)
@@ -263,7 +289,7 @@ def do_set_source():
             cec.transmit(CEC_AVR, cec.CEC_OPCODE_SYSTEM_AUDIO_MODE_REQUEST, addr_bytes)
     # Outgoing ActiveSource is not echoed back via EVENT_COMMAND — update state directly.
     with _state_lock:
-        _active_source    = OWN_LOGICAL
+        _active_source = OWN_LOGICAL
         _is_active_source = True
     push_state()
 
@@ -305,7 +331,10 @@ def handle_command(cmd):
         except Exception as ex:
             print(f"launchscope-cec: standby error: {ex}", flush=True)
     elif cmd == "activate":
-        print("launchscope-cec: activate — ReportPhysicalAddress, DeviceVendorID, TextViewOn, ActiveSource", flush=True)
+        print(
+            "launchscope-cec: activate — ReportPhysicalAddress, DeviceVendorID, TextViewOn, ActiveSource",
+            flush=True,
+        )
         try:
             do_report_physical_addr()
             do_device_vendor_id()
@@ -349,7 +378,10 @@ def socket_server():
 def main():
     global ui
 
-    print(f"launchscope-cec: starting (tv={CEC_TV} avr={CEC_AVR} source={CEC_SOURCE_ADDR!r})", flush=True)
+    print(
+        f"launchscope-cec: starting (tv={CEC_TV} avr={CEC_AVR} source={CEC_SOURCE_ADDR!r})",
+        flush=True,
+    )
     ui = UInput(
         {e.EV_KEY: sorted(set(CEC_KEYMAP.values()))},
         name="launchscope-cec",
@@ -361,7 +393,10 @@ def main():
     print("launchscope-cec: uinput device created", flush=True)
 
     if not CEC_SOURCE_ADDR:
-        print("launchscope-cec: error — CEC_SOURCE_ADDR is required. Run: echo 'scan' | cec-client -s -d 1", flush=True)
+        print(
+            "launchscope-cec: error — CEC_SOURCE_ADDR is required. Run: echo 'scan' | cec-client -s -d 1",
+            flush=True,
+        )
         sys.exit(1)
 
     cec.set_physical_addr(CEC_SOURCE_ADDR)

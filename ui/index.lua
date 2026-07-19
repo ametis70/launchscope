@@ -12,20 +12,20 @@
 --   Layer 2 (aux) always draws but its overlay only shows when aux is focused.
 --   All layers >= 3 always show their overlay when active.
 
-local input  = require("lib.input")
+local input = require("lib.input")
 local shader = require("lib.shader")
-local stack  = require("components.modals.stack")
-local T      = require("lib.theme")
+local stack = require("components.modals.stack")
+local T = require("lib.theme")
 
 local info_bar = nil
-local M        = {}
-local _view    = nil
-local _cfg     = nil
-local _ui      = nil
+local M = {}
+local _view = nil
+local _cfg = nil
+local _ui = nil
 
 function M.init(cfg, ui)
-    _cfg     = cfg
-    _ui      = ui
+    _cfg = cfg
+    _ui = ui
     info_bar = require("components.display.info_bar")
     info_bar.load(ui)
     local Launcher = require("views.launcher")
@@ -34,27 +34,35 @@ function M.init(cfg, ui)
 end
 
 function M.update(dt)
-    if _G.idle then _G.idle.update(dt) end
+    if _G.idle then
+        _G.idle.update(dt)
+    end
     -- During the wake grace period, skip UI updates so mouse hover logic
     -- cannot deactivate list focus before the user has a chance to interact.
     if _G.idle and _G.idle.isInputBlocked() then
         input.flush()
-        if _G.cursor then _G.cursor.flush() end
+        if _G.cursor then
+            _G.cursor.flush()
+        end
         return
     end
     if not stack.isEmpty() then
         stack.update(input)
     else
-        if _view and _view.update then _view:update(dt) end
+        if _view and _view.update then
+            _view:update(dt)
+        end
     end
     input.flush()
-    if _G.cursor then _G.cursor.flush() end
+    if _G.cursor then
+        _G.cursor.flush()
+    end
 end
 
 function M.draw()
-    local modals      = stack.all()
+    local modals = stack.all()
     local aux_focused = _view and _view.isAuxFocused and _view:isAuxFocused()
-    local app_running = _view and _view.isRunning    and _view:isRunning()
+    local app_running = _view and _view.isRunning and _view:isRunning()
 
     -- Layer definitions. Order matters — lower index = lower in the stack.
     -- Each entry: { draw, active, overlay_when_focused_only }
@@ -66,34 +74,54 @@ function M.draw()
     local layers = {
         {
             -- Layer 1: info bar + launch list
-            draw   = function()
+            draw = function()
                 info_bar.draw()
-                if _view then _view:draw() end
+                if _view then
+                    _view:draw()
+                end
             end,
-            active = function() return true end,
+            active = function()
+                return true
+            end,
         },
         {
             -- Layer 2: aux buttons (always drawn; overlay only when aux focused)
-            draw   = function()
-                if _view then _view:drawAux() end
+            draw = function()
+                if _view then
+                    _view:drawAux()
+                end
             end,
-            active        = function() return true end,
-            focus_overlay = function() return aux_focused end,
+            active = function()
+                return true
+            end,
+            focus_overlay = function()
+                return aux_focused
+            end,
         },
         {
             -- Layer 3: running-app screen OR power modal
-            draw   = function()
-                if app_running and _view then _view:drawRunning() end
-                if modals[1] then modals[1]:draw() end
+            draw = function()
+                if app_running and _view then
+                    _view:drawRunning()
+                end
+                if modals[1] then
+                    modals[1]:draw()
+                end
             end,
-            active = function() return app_running or modals[1] ~= nil end,
+            active = function()
+                return app_running or modals[1] ~= nil
+            end,
         },
         {
             -- Layer 4: confirmation modal (second item on stack)
-            draw   = function()
-                if modals[2] then modals[2]:draw() end
+            draw = function()
+                if modals[2] then
+                    modals[2]:draw()
+                end
             end,
-            active = function() return modals[2] ~= nil end,
+            active = function()
+                return modals[2] ~= nil
+            end,
         },
     }
 
@@ -127,19 +155,29 @@ function M.draw()
     end
 
     -- Dim/blank overlay — always drawn last, on top of everything.
-    if _G.idle then _G.idle.drawOverlay() end
+    if _G.idle then
+        _G.idle.drawOverlay()
+    end
 end
 
 function M.resize(w, h)
-    if _view and _view.resize then _view:resize(w, h) end
+    if _view and _view.resize then
+        _view:resize(w, h)
+    end
 end
 
 function M.keypressed(key)
     local top = stack.top()
-    if top and top.keypressed then top:keypressed(key) end
+    if top and top.keypressed then
+        top:keypressed(key)
+    end
 end
 
-function M.pushModal(modal)  stack.push(modal) end
-function M.popModal()        stack.pop()        end
+function M.pushModal(modal)
+    stack.push(modal)
+end
+function M.popModal()
+    stack.pop()
+end
 
 return M

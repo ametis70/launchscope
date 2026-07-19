@@ -6,8 +6,7 @@
 --   if hit(mx, my, {x, y, w, h}) then ... end
 
 local function hit(mx, my, r)
-    return mx >= r[1] and mx < r[1] + r[3]
-       and my >= r[2] and my < r[2] + r[4]
+    return mx >= r[1] and mx < r[1] + r[3] and my >= r[2] and my < r[2] + r[4]
 end
 
 return hit

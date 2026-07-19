@@ -1,4 +1,5 @@
 """Shared fixtures for launchscope tests."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -30,7 +31,7 @@ STATUS_APP_RUNNING = {
 }
 
 APPS_LIST = [
-    {"id": "kodi",      "name": "Kodi"},
+    {"id": "kodi", "name": "Kodi"},
     {"id": "moonlight", "name": "Moonlight"},
 ]
 
@@ -43,6 +44,7 @@ def make_response(status: int, json_data=None):
     resp.raise_for_status = MagicMock()
     if status >= 400:
         from aiohttp import ClientResponseError
+
         resp.raise_for_status.side_effect = ClientResponseError(
             request_info=MagicMock(), history=(), status=status
         )

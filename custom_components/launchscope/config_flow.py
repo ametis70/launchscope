@@ -1,4 +1,5 @@
 """Config flow for Launchscope."""
+
 from __future__ import annotations
 
 import aiohttp
@@ -6,7 +7,15 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_API_KEY, CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL, DEFAULT_PORT, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import (
+    CONF_API_KEY,
+    CONF_HOST,
+    CONF_PORT,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_PORT,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+)
 
 
 class LaunchscopeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -37,12 +46,14 @@ class LaunchscopeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_HOST): str,
-                vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
-                vol.Required(CONF_API_KEY): str,
-                vol.Required(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): int,
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST): str,
+                    vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
+                    vol.Required(CONF_API_KEY): str,
+                    vol.Required(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): int,
+                }
+            ),
             errors=errors,
         )
 
@@ -74,12 +85,17 @@ class LaunchscopeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         current = entry.data
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=vol.Schema({
-                vol.Required(CONF_HOST, default=current.get(CONF_HOST, "")): str,
-                vol.Required(CONF_PORT, default=current.get(CONF_PORT, DEFAULT_PORT)): int,
-                vol.Required(CONF_API_KEY, default=current.get(CONF_API_KEY, "")): str,
-                vol.Required(CONF_SCAN_INTERVAL, default=current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)): int,
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST, default=current.get(CONF_HOST, "")): str,
+                    vol.Required(CONF_PORT, default=current.get(CONF_PORT, DEFAULT_PORT)): int,
+                    vol.Required(CONF_API_KEY, default=current.get(CONF_API_KEY, "")): str,
+                    vol.Required(
+                        CONF_SCAN_INTERVAL,
+                        default=current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                    ): int,
+                }
+            ),
             errors=errors,
         )
 
@@ -102,7 +118,9 @@ class LaunchscopeOptionsFlow(config_entries.OptionsFlow):
         )
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema({
-                vol.Required(CONF_SCAN_INTERVAL, default=current): int,
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_SCAN_INTERVAL, default=current): int,
+                }
+            ),
         )

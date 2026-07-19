@@ -6,36 +6,40 @@
 --   LAUNCHSCOPE_PORT=N         Override server port (default 8765)
 --   LAUNCHSCOPE_FONT=name      Override font from config (name or absolute path)
 
-local uiconfig  = require("lib.uiconfig")
-local client    = require("lib.client")
-local input     = require("lib.input")
-local shader    = require("lib.shader")
+local uiconfig = require("lib.uiconfig")
+local client = require("lib.client")
+local input = require("lib.input")
+local shader = require("lib.shader")
 local volumeBar = require("lib.volume_bar")
-local icons     = require("lib.icons")
-local cursor    = require("lib.cursor")
-local sound     = require("lib.sound")
-local T         = require("lib.theme")
-local idle      = require("lib.idle")
-local index     = require("index")
+local icons = require("lib.icons")
+local cursor = require("lib.cursor")
+local sound = require("lib.sound")
+local T = require("lib.theme")
+local idle = require("lib.idle")
+local index = require("index")
 
 -- Expose cursor globally so views and modals can switch cursors.
-_G.cursor = nil  -- set after init
+_G.cursor = nil -- set after init
 
 -- Expose index globally so views and modals can push modals / switch views.
 _G.index = index
 
 local NESTED = os.getenv("LAUNCHSCOPE_SESSION_MODE") == "nested_gamescope"
-           or os.getenv("LAUNCHSCOPE_SESSION_MODE") == "nested_direct"
+    or os.getenv("LAUNCHSCOPE_SESSION_MODE") == "nested_direct"
 
 -- ── Volume polling via wpctl ──────────────────────────────────────────── --
 
 local function readVolumeWpctl()
     local f = io.popen("wpctl get-volume @DEFAULT_SINK@ 2>/dev/null")
-    if not f then return nil, nil end
+    if not f then
+        return nil, nil
+    end
     local line = f:read("*l")
     f:close()
-    if not line then return nil, nil end
-    local vol   = tonumber(line:match("Volume:%s*([-0-9.]+)"))
+    if not line then
+        return nil, nil
+    end
+    local vol = tonumber(line:match("Volume:%s*([-0-9.]+)"))
     local muted = line:find("%[MUTED%]") ~= nil
     return vol, muted
 end
@@ -47,10 +51,15 @@ _G.volumeBar = volumeBar
 local _font_path = nil
 
 local function resolveFontPath(spec)
-    if not spec or spec == "" then return nil end
+    if not spec or spec == "" then
+        return nil
+    end
     if spec:sub(1, 1) == "/" then
         local fh = io.open(spec, "rb")
-        if fh then fh:close(); return spec end
+        if fh then
+            fh:close()
+            return spec
+        end
         print("WARNING: font file not found: " .. spec)
         return nil
     end
@@ -79,7 +88,8 @@ local function _loadFont(size)
             _font_path = nil
             f = love.graphics.newFont(size, "none")
         else
-            local data = fh:read("*a"); fh:close()
+            local data = fh:read("*a")
+            fh:close()
             local fd = love.filesystem.newFileData(data, "font.ttf")
             f = love.graphics.newFont(fd, size, "none")
         end
@@ -89,13 +99,15 @@ local function _loadFont(size)
 end
 
 -- Global font constructor used by all components, views, and modals.
-function newFont(size) return _loadFont(size) end
+function newFont(size)
+    return _loadFont(size)
+end
 
 -- ── love callbacks ────────────────────────────────────────────────────── --
 
-local cfg             = nil
+local cfg = nil
 local _vol_poll_timer = 0
-local VOL_POLL_RATE   = 2.0
+local VOL_POLL_RATE = 2.0
 
 function love.load()
     if love.filesystem.getInfo("assets/gamecontrollerdb.txt") then
@@ -104,14 +116,18 @@ function love.load()
     cfg = uiconfig.load()
     _init()
     local vol, mut = readVolumeWpctl()
-    if vol then volumeBar.syncState(vol, mut) end
+    if vol then
+        volumeBar.syncState(vol, mut)
+    end
 end
 
 function love.update(dt)
     -- While blanked (inactivity or CEC not visible), skip UI rendering work
     -- but still update idle so CEC polling can detect when to wake.
     if _G.idle and _G.idle.isBlanked() then
-        if _G.idle then _G.idle.update(dt) end
+        if _G.idle then
+            _G.idle.update(dt)
+        end
         input.flush()
         love.timer.sleep(0.1)
         return
@@ -119,7 +135,9 @@ function love.update(dt)
 
     -- Hide the cursor as soon as the dim overlay starts.
     if _G.idle and _G.idle.isDimmed() then
-        if _G.cursor then _G.cursor.hideDim() end
+        if _G.cursor then
+            _G.cursor.hideDim()
+        end
     end
 
     shader.update(dt)
@@ -129,7 +147,9 @@ function love.update(dt)
         if _vol_poll_timer >= VOL_POLL_RATE then
             _vol_poll_timer = 0
             local vol, mut = readVolumeWpctl()
-            if vol then volumeBar.syncState(vol, mut) end
+            if vol then
+                volumeBar.syncState(vol, mut)
+            end
         end
     end
 
@@ -138,7 +158,9 @@ function love.update(dt)
 end
 
 function love.draw()
-    if _G.idle and _G.idle.isBlanked() then return end
+    if _G.idle and _G.idle.isBlanked() then
+        return
+    end
     index.draw()
 end
 
@@ -146,17 +168,49 @@ function love.keypressed(key)
     if key == "q" and love.keyboard.isDown("lctrl") then
         love.event.quit()
     end
-    if _G.cursor then _G.cursor.hide() end
-    if _G.idle   then _G.idle.reset()  end
-    if _G.idle and _G.idle.isInputBlocked() then return end
+    if _G.cursor then
+        _G.cursor.hide()
+    end
+    if _G.idle then
+        _G.idle.reset()
+    end
+    if _G.idle and _G.idle.isInputBlocked() then
+        return
+    end
     index.keypressed(key)
     input.keypressed(key)
 end
 
-function love.keyreleased(key)       input.keyreleased(key) end
-function love.gamepadpressed(j, b)   if _G.cursor then _G.cursor.hide() end  if _G.idle then _G.idle.reset() end  if _G.idle and _G.idle.isInputBlocked() then return end  input.gamepadpressed(j, b) end
-function love.gamepadreleased(j, b)  input.gamepadreleased(j, b) end
-function love.gamepadaxis(j, a, v)   if _G.cursor then _G.cursor.hide() end  if _G.idle then _G.idle.reset() end  if _G.idle and _G.idle.isInputBlocked() then return end  input.gamepadaxis(j, a, v) end
+function love.keyreleased(key)
+    input.keyreleased(key)
+end
+function love.gamepadpressed(j, b)
+    if _G.cursor then
+        _G.cursor.hide()
+    end
+    if _G.idle then
+        _G.idle.reset()
+    end
+    if _G.idle and _G.idle.isInputBlocked() then
+        return
+    end
+    input.gamepadpressed(j, b)
+end
+function love.gamepadreleased(j, b)
+    input.gamepadreleased(j, b)
+end
+function love.gamepadaxis(j, a, v)
+    if _G.cursor then
+        _G.cursor.hide()
+    end
+    if _G.idle then
+        _G.idle.reset()
+    end
+    if _G.idle and _G.idle.isInputBlocked() then
+        return
+    end
+    input.gamepadaxis(j, a, v)
+end
 function love.mousemoved(x, y)
     if _G.cursor then
         if _G.cursor.isHiddenByDim() then
@@ -165,7 +219,9 @@ function love.mousemoved(x, y)
             _G.cursor.show()
         end
     end
-    if _G.idle then _G.idle.reset() end
+    if _G.idle then
+        _G.idle.reset()
+    end
     input.mousemoved(x, y)
 end
 
@@ -174,15 +230,31 @@ function love.mousepressed(x, y, b)
     -- the cursor — show it and reset idle, but do not forward to the UI.
     if _G.cursor and _G.cursor.isHiddenByDim() then
         _G.cursor.showDim()
-        if _G.idle then _G.idle.reset() end
+        if _G.idle then
+            _G.idle.reset()
+        end
         return
     end
-    if _G.idle then _G.idle.reset() end
-    if _G.idle and _G.idle.isInputBlocked() then return end
+    if _G.idle then
+        _G.idle.reset()
+    end
+    if _G.idle and _G.idle.isInputBlocked() then
+        return
+    end
     input.mousepressed(x, y, b)
 end
-function love.mousereleased(x, y, b) input.mousereleased(x, y, b) end
-function love.wheelmoved(x, y)       if _G.idle then _G.idle.reset() end  if _G.idle and _G.idle.isInputBlocked() then return end  input.wheelmoved(x, y) end
+function love.mousereleased(x, y, b)
+    input.mousereleased(x, y, b)
+end
+function love.wheelmoved(x, y)
+    if _G.idle then
+        _G.idle.reset()
+    end
+    if _G.idle and _G.idle.isInputBlocked() then
+        return
+    end
+    input.wheelmoved(x, y)
+end
 function love.textinput(_) end
 
 function love.resize(w, h)
@@ -194,27 +266,27 @@ end
 
 function _init()
     local disp = cfg.display or {}
-    local out  = disp.output or {}
+    local out = disp.output or {}
 
     if not NESTED then
         -- drm_gamescope: gamescope controls the display; just set the window size.
         local fs = true
-        local w  = out.width   or 1920
-        local h  = out.height  or 1080
+        local w = out.width or 1920
+        local h = out.height or 1080
         love.window.setMode(w, h, {
-            fullscreen     = fs,
+            fullscreen = fs,
             fullscreentype = "desktop",
-            vsync          = 1,
+            vsync = 1,
         })
     else
         -- nested_gamescope / nested_direct: fullscreen is user-controlled.
         local fs = disp.fullscreen ~= false
-        local w  = out.width   or 1920
-        local h  = out.height  or 1080
+        local w = out.width or 1920
+        local h = out.height or 1080
         love.window.setMode(w, h, {
-            fullscreen     = fs,
+            fullscreen = fs,
             fullscreentype = "desktop",
-            vsync          = 1,
+            vsync = 1,
         })
     end
 
@@ -222,11 +294,11 @@ function _init()
 
     local scale = cfg.scale or 1.0
     _G.UI = {
-        font_size      = math.floor(38 * scale),
-        icon_size      = math.floor(24 * scale),   -- cursor size only
-        ui_icon_size   = math.floor(24 * scale),   -- all UI icons
-        item_height    = math.floor(72 * scale),
-        padding        = math.floor(24 * scale),
+        font_size = math.floor(38 * scale),
+        icon_size = math.floor(24 * scale), -- cursor size only
+        ui_icon_size = math.floor(24 * scale), -- all UI icons
+        item_height = math.floor(72 * scale),
+        padding = math.floor(24 * scale),
         corner_padding = math.floor(32 * scale),
     }
     T.init(_G.UI)
@@ -246,9 +318,12 @@ function _init()
     idle.init(cfg.idle)
     _G.idle = idle
 
-    if cfg.process_mode == "daemon"
-        and cfg.idle and cfg.idle.blank_mode == "cec"
-        and cfg.idle.cec_activate_on_start ~= false then
+    if
+        cfg.process_mode == "daemon"
+        and cfg.idle
+        and cfg.idle.blank_mode == "cec"
+        and cfg.idle.cec_activate_on_start ~= false
+    then
         client.cecActivate()
     end
 

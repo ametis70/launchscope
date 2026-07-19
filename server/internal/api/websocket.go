@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/gorilla/websocket"
 	"github.com/ametis70/launchscope/server/internal/audio"
 	"github.com/ametis70/launchscope/server/internal/events"
 	"github.com/ametis70/launchscope/server/internal/process"
+	"github.com/gorilla/websocket"
 )
 
 // upgrader accepts WebSocket upgrades from any origin. This is intentional:

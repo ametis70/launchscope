@@ -1,4 +1,5 @@
 """Button entities for Launchscope."""
+
 from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity
@@ -23,13 +24,15 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: LauncherCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([
-        LaunchscopeStopButton(coordinator, entry),
-        LaunchscopeCECActivateButton(coordinator, entry),
-        LaunchscopeCECPowerOnButton(coordinator, entry),
-        LaunchscopeCECSetSourceButton(coordinator, entry),
-        LaunchscopeCECStandbyButton(coordinator, entry),
-    ])
+    async_add_entities(
+        [
+            LaunchscopeStopButton(coordinator, entry),
+            LaunchscopeCECActivateButton(coordinator, entry),
+            LaunchscopeCECPowerOnButton(coordinator, entry),
+            LaunchscopeCECSetSourceButton(coordinator, entry),
+            LaunchscopeCECStandbyButton(coordinator, entry),
+        ]
+    )
 
 
 class LaunchscopeStopButton(CoordinatorEntity, ButtonEntity):
@@ -37,9 +40,9 @@ class LaunchscopeStopButton(CoordinatorEntity, ButtonEntity):
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id   = f"{entry.entry_id}_stop"
-        self._attr_name        = "Stop App"
-        self._attr_icon        = "mdi:stop"
+        self._attr_unique_id = f"{entry.entry_id}_stop"
+        self._attr_name = "Stop App"
+        self._attr_icon = "mdi:stop"
         self._attr_device_info = _DEVICE(entry)
 
     @property
@@ -57,9 +60,9 @@ class LaunchscopeCECActivateButton(CoordinatorEntity, ButtonEntity):
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id   = f"{entry.entry_id}_cec_activate"
-        self._attr_name        = "Activate Launchscope"
-        self._attr_icon        = "mdi:television-play"
+        self._attr_unique_id = f"{entry.entry_id}_cec_activate"
+        self._attr_name = "Activate Launchscope"
+        self._attr_icon = "mdi:television-play"
         self._attr_device_info = _DEVICE(entry)
 
     async def async_press(self) -> None:
@@ -71,9 +74,9 @@ class LaunchscopeCECPowerOnButton(CoordinatorEntity, ButtonEntity):
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id   = f"{entry.entry_id}_cec_power_on"
-        self._attr_name        = "Turn On TV"
-        self._attr_icon        = "mdi:power"
+        self._attr_unique_id = f"{entry.entry_id}_cec_power_on"
+        self._attr_name = "Turn On TV"
+        self._attr_icon = "mdi:power"
         self._attr_device_info = _DEVICE(entry)
 
     async def async_press(self) -> None:
@@ -85,9 +88,9 @@ class LaunchscopeCECSetSourceButton(CoordinatorEntity, ButtonEntity):
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id   = f"{entry.entry_id}_cec_set_source"
-        self._attr_name        = "Set as Active Source"
-        self._attr_icon        = "mdi:import"
+        self._attr_unique_id = f"{entry.entry_id}_cec_set_source"
+        self._attr_name = "Set as Active Source"
+        self._attr_icon = "mdi:import"
         self._attr_device_info = _DEVICE(entry)
 
     async def async_press(self) -> None:
@@ -99,9 +102,9 @@ class LaunchscopeCECStandbyButton(CoordinatorEntity, ButtonEntity):
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id   = f"{entry.entry_id}_cec_standby"
-        self._attr_name        = "Turn Off TV"
-        self._attr_icon        = "mdi:television-off"
+        self._attr_unique_id = f"{entry.entry_id}_cec_standby"
+        self._attr_name = "Turn Off TV"
+        self._attr_icon = "mdi:television-off"
         self._attr_device_info = _DEVICE(entry)
 
     async def async_press(self) -> None:

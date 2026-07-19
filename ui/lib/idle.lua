@@ -43,8 +43,8 @@ local client = require("lib.client")
 
 -- Dim fade duration (seconds) and maximum opacity (0–1).
 -- Stopping at 0.70 leaves the UI faintly visible rather than going fully black.
-local DIM_FADE_DURATION  = 2.0
-local DIM_MAX_ALPHA      = 0.70
+local DIM_FADE_DURATION = 2.0
+local DIM_MAX_ALPHA = 0.70
 
 -- How long to ignore input after waking from blank via a keypress (seconds).
 -- CEC-triggered wakes skip this grace period.
@@ -53,25 +53,25 @@ local WAKE_GRACE_DURATION = 2.0
 -- Default blank/unblank commands for DRM/gamescope mode.
 -- wlopm is bundled via the Nix package; gamescope exposes zwlr-output-power-management-v1.
 local DEFAULT_BLANK_OFF = "wlopm --off '*'"
-local DEFAULT_BLANK_ON  = "wlopm --on '*'"
+local DEFAULT_BLANK_ON = "wlopm --on '*'"
 
-local _dim_timeout        = 60
-local _blank_timeout      = 0
-local _blank_mode         = "wlopm"
-local _cec_throttle       = 3.0
-local _cec_throttle_t     = 0
-local _blank_off          = nil
-local _blank_on           = nil
-local _idle_t             = 0
-local _blanked            = false
-local _wake_grace         = 0
-local _dim_enabled        = false
-local _blank_enabled      = false
+local _dim_timeout = 60
+local _blank_timeout = 0
+local _blank_mode = "wlopm"
+local _cec_throttle = 3.0
+local _cec_throttle_t = 0
+local _blank_off = nil
+local _blank_on = nil
+local _idle_t = 0
+local _blanked = false
+local _wake_grace = 0
+local _dim_enabled = false
+local _blank_enabled = false
 
 -- CEC visibility polling (blank_mode = "cec" only)
-local _cec_poll_interval  = 5.0
-local _cec_poll_t         = 0
-local _cec_visible        = true   -- optimistic: assume visible until first poll
+local _cec_poll_interval = 5.0
+local _cec_poll_t = 0
+local _cec_visible = true -- optimistic: assume visible until first poll
 
 -- ── Helpers ───────────────────────────────────────────────────────────── --
 
@@ -82,7 +82,9 @@ local function runCmd(cmd)
 end
 
 local function cecActivateThrottled()
-    if _cec_throttle_t > 0 then return end
+    if _cec_throttle_t > 0 then
+        return
+    end
     _cec_throttle_t = _cec_throttle
     client.cecActivate()
 end
@@ -90,9 +92,11 @@ end
 -- Wake from blank without a grace period — used when visibility is restored
 -- externally (TV turned on, source switched to PC) rather than by a keypress.
 local function wakeExternal()
-    if not _blanked then return end
-    _blanked  = false
-    _idle_t   = 0
+    if not _blanked then
+        return
+    end
+    _blanked = false
+    _idle_t = 0
     -- No wake grace — no keypress to absorb.
 end
 
@@ -100,21 +104,21 @@ end
 
 function M.init(cfg)
     cfg = cfg or {}
-    _dim_timeout        = tonumber(cfg.dim_timeout)           or 60
-    _blank_timeout      = tonumber(cfg.blank_timeout)         or 0
-    _blank_mode         = cfg.blank_mode                      or "wlopm"
-    _cec_throttle       = tonumber(cfg.cec_activate_throttle) or 3.0
-    _cec_throttle_t     = 0
-    _blank_off          = cfg.blank_off or DEFAULT_BLANK_OFF
-    _blank_on           = cfg.blank_on  or DEFAULT_BLANK_ON
-    _cec_poll_interval  = tonumber(cfg.cec_poll_interval)     or 5.0
-    _cec_poll_t         = _cec_poll_interval  -- poll immediately on first update
-    _cec_visible        = true
-    _idle_t             = 0
-    _blanked            = false
-    _wake_grace         = 0
-    _dim_enabled        = _dim_timeout  > 0
-    _blank_enabled      = _blank_timeout > 0
+    _dim_timeout = tonumber(cfg.dim_timeout) or 60
+    _blank_timeout = tonumber(cfg.blank_timeout) or 0
+    _blank_mode = cfg.blank_mode or "wlopm"
+    _cec_throttle = tonumber(cfg.cec_activate_throttle) or 3.0
+    _cec_throttle_t = 0
+    _blank_off = cfg.blank_off or DEFAULT_BLANK_OFF
+    _blank_on = cfg.blank_on or DEFAULT_BLANK_ON
+    _cec_poll_interval = tonumber(cfg.cec_poll_interval) or 5.0
+    _cec_poll_t = _cec_poll_interval -- poll immediately on first update
+    _cec_visible = true
+    _idle_t = 0
+    _blanked = false
+    _wake_grace = 0
+    _dim_enabled = _dim_timeout > 0
+    _blank_enabled = _blank_timeout > 0
 end
 
 -- Reset the idle timer. Call on every input event.
@@ -127,9 +131,9 @@ function M.reset()
         cecActivateThrottled()
     end
     if _blanked then
-        _blanked    = false
+        _blanked = false
         _wake_grace = WAKE_GRACE_DURATION
-        _idle_t     = 0
+        _idle_t = 0
         if _blank_mode ~= "cec" then
             runCmd(_blank_on)
         end
@@ -167,7 +171,9 @@ function M.update(dt)
         end
     end
 
-    if not _dim_enabled and not _blank_enabled then return end
+    if not _dim_enabled and not _blank_enabled then
+        return
+    end
     _idle_t = _idle_t + dt
 
     if _blank_enabled and not _blanked and _idle_t >= _blank_timeout then
@@ -182,8 +188,12 @@ end
 
 -- Draw the dim overlay. Call at the very end of index.draw().
 function M.drawOverlay()
-    if not _dim_enabled then return end
-    if _idle_t < _dim_timeout then return end
+    if not _dim_enabled then
+        return
+    end
+    if _idle_t < _dim_timeout then
+        return
+    end
 
     local alpha
     if _idle_t >= _dim_timeout + DIM_FADE_DURATION then
@@ -199,12 +209,18 @@ function M.drawOverlay()
 end
 
 -- Returns true when the display is off (inactivity blank or CEC not visible).
-function M.isBlanked() return _blanked end
+function M.isBlanked()
+    return _blanked
+end
 
 -- Returns true when the dim overlay is active (idle_t >= dim_timeout).
-function M.isDimmed() return _dim_enabled and _idle_t >= _dim_timeout end
+function M.isDimmed()
+    return _dim_enabled and _idle_t >= _dim_timeout
+end
 
 -- Returns true during the wake grace period — input should be discarded.
-function M.isInputBlocked() return _wake_grace > 0 end
+function M.isInputBlocked()
+    return _wake_grace > 0
+end
 
 return M

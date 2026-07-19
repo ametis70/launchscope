@@ -1,9 +1,7 @@
-{ pkgs }:
-
-let
+{pkgs}: let
   # Default font: DepartureMono Nerd Font.
   # Override at runtime with LAUNCHSCOPE_FONT=<fc-match name or path>.
-  devFont     = pkgs.nerd-fonts.departure-mono;
+  devFont = pkgs.nerd-fonts.departure-mono;
   devFontName = "DepartureMono Nerd Font";
 
   # UI scripts — all four combinations of session_mode × process_mode
@@ -78,6 +76,11 @@ let
   # pytest-homeassistant-custom-component from PyPI automatically.
   # pytest-homeassistant-custom-component and its transitive HA dependencies
   # are not packaged in nixpkgs, so pip is used for this one task.
+  # Run the Home Assistant integration test suite.
+  # On first run, creates a venv at homeassistant/.venv and installs
+  # pytest-homeassistant-custom-component from PyPI automatically.
+  # pytest-homeassistant-custom-component and its transitive HA dependencies
+  # are not packaged in nixpkgs, so pip is used for this one task.
   ls-ha-test = pkgs.writeShellScriptBin "ls-ha-test" ''
     VENV="$PWD/homeassistant/.venv"
     REQ="$PWD/homeassistant/requirements-test.txt"
@@ -89,77 +92,164 @@ let
     exec "$VENV/bin/pytest" --rootdir="$PWD/homeassistant" "$PWD/homeassistant/tests" "$@"
   '';
 
-in
-pkgs.mkShell {
-  name = "launchscope-dev";
+  # Lint + format scripts
 
-  packages = with pkgs; [
-    # Python — for Home Assistant integration tests.
-    # pytest-homeassistant-custom-component is not in nixpkgs; use ls-ha-test
-    # after creating the venv (see script comment above).
-    python3
-
-    # Go — server development.
-    go
-    gopls
-    gotools
-    golangci-lint
-    delve
-
-    # Lua / LÖVE2D — UI development.
-    love
-    lua5_4           # gamescope-args.lua and tools
-    lua-language-server
-    luajitPackages.luacheck
-
-    # Runtime — gamescope for nested_gamescope session mode.
-    gamescope
-    fontconfig       # fc-match for font name resolution
-
-    # Fonts.
-    devFont
-
-    # Dev scripts.
-    ls-ui
-    ls-ui-gs
-    ls-ui-standalone
-    ls-ui-standalone-gs
-    ls-dev
-    ls-server-test
-    ls-ha-test
-  ];
-
-  env.LAUNCHSCOPE_FONT = devFontName;
-
-  shellHook = ''
-    # Re-exec as zsh when launched interactively by `nix develop`.
-    # Skip when nix-direnv is sourcing the environment (DIRENV_IN_ENVRC is set).
-    if [ -z "$__LAUNCHSCOPE_DEV_SHELL" ] && [ -z "$DIRENV_IN_ENVRC" ]; then
-      export __LAUNCHSCOPE_DEV_SHELL=1
-      exec ${pkgs.zsh}/bin/zsh
-    fi
-
-    echo ""
-    echo "  launchscope dev shell"
-    echo ""
-    echo "  LAUNCHSCOPE_FONT=${devFontName}"
-    echo ""
-    echo "  UI scripts"
-    echo "  ls-ui                nested_direct + daemon     — windowed, connects to launchscoped"
-    echo "  ls-ui-gs             nested_gamescope + daemon  — gamescope window, connects to launchscoped"
-    echo "  ls-ui-standalone     nested_direct + standalone — windowed, UI manages apps"
-    echo "  ls-ui-standalone-gs  nested_gamescope + standalone — gamescope window, UI manages apps"
-    echo ""
-    echo "  Server scripts"
-    echo "  ls-dev               run launchscoped + UI together (server launches UI)"
-    echo ""
-    echo "  Test scripts"
-    echo "  ls-server-test           run Go server test suite (--coverage for HTML report)"
-    echo "  ls-ha-test           run Home Assistant integration tests"
-    echo ""
-    echo "  Build"
-    echo "  nix build .#launchscoped"
-    echo "  nix build .#launchscope"
-    echo ""
+  ls-lint-server = pkgs.writeShellScriptBin "ls-lint-server" ''
+    cd "$PWD/server" && exec golangci-lint run ./... "$@"
   '';
-}
+  ls-fmt-server = pkgs.writeShellScriptBin "ls-fmt-server" ''
+    exec gofmt -w "$PWD/server"
+  '';
+
+  ls-lint-ui = pkgs.writeShellScriptBin "ls-lint-ui" ''
+    exec luacheck "$PWD/ui" --config "$PWD/.luacheckrc" "$@"
+  '';
+  ls-fmt-ui = pkgs.writeShellScriptBin "ls-fmt-ui" ''
+    exec stylua "$PWD/ui" "$@"
+  '';
+
+  ls-lint-cec = pkgs.writeShellScriptBin "ls-lint-cec" ''
+    exec ruff check "$PWD/cec" "$@"
+  '';
+  ls-fmt-cec = pkgs.writeShellScriptBin "ls-fmt-cec" ''
+    exec ruff format "$PWD/cec" "$@"
+  '';
+
+  ls-lint-ha = pkgs.writeShellScriptBin "ls-lint-ha" ''
+    exec ruff check "$PWD/homeassistant" "$PWD/custom_components" "$@"
+  '';
+  ls-fmt-ha = pkgs.writeShellScriptBin "ls-fmt-ha" ''
+    exec ruff format "$PWD/homeassistant" "$PWD/custom_components" "$@"
+  '';
+
+  ls-lint-nix = pkgs.writeShellScriptBin "ls-lint-nix" ''
+    exec statix check "$PWD" "$@"
+  '';
+  ls-fmt-nix = pkgs.writeShellScriptBin "ls-fmt-nix" ''
+    exec alejandra "$PWD" "$@"
+  '';
+
+  ls-lint = pkgs.writeShellScriptBin "ls-lint" ''
+    rc=0
+    echo "==> server" && ls-lint-server || rc=1
+    echo "==> ui"     && ls-lint-ui     || rc=1
+    echo "==> cec"    && ls-lint-cec    || rc=1
+    echo "==> ha"     && ls-lint-ha     || rc=1
+    echo "==> nix"    && ls-lint-nix    || rc=1
+    exit $rc
+  '';
+
+  ls-fmt = pkgs.writeShellScriptBin "ls-fmt" ''
+    set -e
+    echo "==> server" && ls-fmt-server
+    echo "==> ui"     && ls-fmt-ui
+    echo "==> cec"    && ls-fmt-cec
+    echo "==> ha"     && ls-fmt-ha
+    echo "==> nix"    && ls-fmt-nix
+  '';
+in
+  pkgs.mkShell {
+    name = "launchscope-dev";
+
+    packages = with pkgs; [
+      # Go — server development.
+      go
+      gopls
+      gotools
+      golangci-lint
+      delve
+
+      # Lua / LÖVE2D — UI development.
+      love
+      lua5_4 # gamescope-args.lua and tools
+      lua-language-server
+      luajitPackages.luacheck
+      stylua
+
+      # Python — CEC bridge and Home Assistant integration.
+      python3
+      ruff
+
+      # Nix — modules and packages.
+      alejandra
+      statix
+
+      # Runtime — gamescope for nested_gamescope session mode.
+      gamescope
+      fontconfig # fc-match for font name resolution
+
+      # Fonts.
+      devFont
+
+      # Dev scripts.
+      ls-ui
+      ls-ui-gs
+      ls-ui-standalone
+      ls-ui-standalone-gs
+      ls-dev
+      ls-server-test
+      ls-ha-test
+      ls-lint-server
+      ls-lint-ui
+      ls-lint-cec
+      ls-lint-ha
+      ls-lint-nix
+      ls-lint
+      ls-fmt-server
+      ls-fmt-ui
+      ls-fmt-cec
+      ls-fmt-ha
+      ls-fmt-nix
+      ls-fmt
+    ];
+
+    env.LAUNCHSCOPE_FONT = devFontName;
+
+    shellHook = ''
+      # Re-exec as zsh when launched interactively by `nix develop`.
+      # Skip when nix-direnv is sourcing the environment (DIRENV_IN_ENVRC is set).
+      if [ -z "$__LAUNCHSCOPE_DEV_SHELL" ] && [ -z "$DIRENV_IN_ENVRC" ]; then
+        export __LAUNCHSCOPE_DEV_SHELL=1
+        exec ${pkgs.zsh}/bin/zsh
+      fi
+
+      echo ""
+      echo "  launchscope dev shell"
+      echo ""
+      echo "  LAUNCHSCOPE_FONT=${devFontName}"
+      echo ""
+      echo "  UI scripts"
+      echo "  ls-ui                nested_direct + daemon     — windowed, connects to launchscoped"
+      echo "  ls-ui-gs             nested_gamescope + daemon  — gamescope window, connects to launchscoped"
+      echo "  ls-ui-standalone     nested_direct + standalone — windowed, UI manages apps"
+      echo "  ls-ui-standalone-gs  nested_gamescope + standalone — gamescope window, UI manages apps"
+      echo ""
+      echo "  Server scripts"
+      echo "  ls-dev               run launchscoped + UI together (server launches UI)"
+      echo ""
+      echo "  Test scripts"
+      echo "  ls-server-test       run Go server test suite (--coverage for HTML report)"
+      echo "  ls-ha-test           run Home Assistant integration tests"
+      echo ""
+      echo "  Lint"
+      echo "  ls-lint              lint all packages"
+      echo "  ls-lint-server       golangci-lint (Go)"
+      echo "  ls-lint-ui           luacheck (Lua)"
+      echo "  ls-lint-cec          ruff check (Python)"
+      echo "  ls-lint-ha           ruff check (Python)"
+      echo "  ls-lint-nix          statix (Nix)"
+      echo ""
+      echo "  Format"
+      echo "  ls-fmt               format all packages"
+      echo "  ls-fmt-server        gofmt (Go)"
+      echo "  ls-fmt-ui            stylua (Lua)"
+      echo "  ls-fmt-cec           ruff format (Python)"
+      echo "  ls-fmt-ha            ruff format (Python)"
+      echo "  ls-fmt-nix           alejandra (Nix)"
+      echo ""
+      echo "  Build"
+      echo "  nix build .#launchscoped"
+      echo "  nix build .#launchscope"
+      echo ""
+    '';
+  }

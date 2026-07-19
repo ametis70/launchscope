@@ -14,15 +14,17 @@
 
 local M = {}
 
-local _shader   = nil
-local _t        = 0
-local _animate  = true
-local _type     = "shader"
-local _color    = { 0, 0, 0, 1 }  -- solid fallback
+local _shader = nil
+local _t = 0
+local _animate = true
+local _type = "shader"
+local _color = { 0, 0, 0, 1 } -- solid fallback
 
 -- Parse "#rrggbb" or "#rrggbbaa" → { r, g, b, a } in 0–1 range.
 local function parseHex(hex)
-    if not hex then return { 0, 0, 0, 1 } end
+    if not hex then
+        return { 0, 0, 0, 1 }
+    end
     hex = hex:gsub("^#", "")
     local r = tonumber(hex:sub(1, 2), 16) or 0
     local g = tonumber(hex:sub(3, 4), 16) or 0
@@ -47,21 +49,27 @@ end
 
 function M.applyConfig(bg_cfg)
     local cfg = bg_cfg or {}
-    _type    = cfg.type    or "shader"
-    _animate = cfg.animate ~= false   -- default true
-    _color   = parseHex(cfg.color or "#0d1440")
+    _type = cfg.type or "shader"
+    _animate = cfg.animate ~= false -- default true
+    _color = parseHex(cfg.color or "#0d1440")
 
-    if _shader then M._sendResolution() end
+    if _shader then
+        M._sendResolution()
+    end
 end
 
 function M._sendResolution()
-    if not _shader then return end
+    if not _shader then
+        return
+    end
     local sw, sh = love.graphics.getDimensions()
     _shader:send("u_resolution", { sw, sh })
 end
 
 function M.update(dt)
-    if _type ~= "shader" or not _animate then return end
+    if _type ~= "shader" or not _animate then
+        return
+    end
     _t = _t + dt
     if _shader then
         _shader:send("u_time", _t)

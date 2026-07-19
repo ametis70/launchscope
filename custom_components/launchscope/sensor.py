@@ -1,4 +1,5 @@
 """Sensor entities for Launchscope."""
+
 from __future__ import annotations
 
 from homeassistant.components.sensor import SensorEntity
@@ -23,20 +24,22 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: LauncherCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([
-        LaunchscopeCurrentAppSensor(coordinator, entry),
-        LaunchscopeCECTVSensor(coordinator, entry),
-        LaunchscopeCECAVRSensor(coordinator, entry),
-        LaunchscopeCECActiveSourceSensor(coordinator, entry),
-    ])
+    async_add_entities(
+        [
+            LaunchscopeCurrentAppSensor(coordinator, entry),
+            LaunchscopeCECTVSensor(coordinator, entry),
+            LaunchscopeCECAVRSensor(coordinator, entry),
+            LaunchscopeCECActiveSourceSensor(coordinator, entry),
+        ]
+    )
 
 
 class LaunchscopeCurrentAppSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id   = f"{entry.entry_id}_current_app"
-        self._attr_name        = "Current App"
-        self._attr_icon        = "mdi:apps"
+        self._attr_unique_id = f"{entry.entry_id}_current_app"
+        self._attr_name = "Current App"
+        self._attr_icon = "mdi:apps"
         self._attr_device_info = _DEVICE(entry)
 
     @property
@@ -60,9 +63,9 @@ class LaunchscopeCECTVSensor(CoordinatorEntity, SensorEntity):
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id   = f"{entry.entry_id}_cec_tv_on"
-        self._attr_name        = "TV Power"
-        self._attr_icon        = "mdi:television"
+        self._attr_unique_id = f"{entry.entry_id}_cec_tv_on"
+        self._attr_name = "TV Power"
+        self._attr_icon = "mdi:television"
         self._attr_device_info = _DEVICE(entry)
 
     @property
@@ -78,9 +81,9 @@ class LaunchscopeCECAVRSensor(CoordinatorEntity, SensorEntity):
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id   = f"{entry.entry_id}_cec_avr_on"
-        self._attr_name        = "AVR Power"
-        self._attr_icon        = "mdi:amplifier"
+        self._attr_unique_id = f"{entry.entry_id}_cec_avr_on"
+        self._attr_name = "AVR Power"
+        self._attr_icon = "mdi:amplifier"
         self._attr_device_info = _DEVICE(entry)
 
     @property
@@ -101,9 +104,9 @@ class LaunchscopeCECActiveSourceSensor(CoordinatorEntity, SensorEntity):
 
     def __init__(self, coordinator: LauncherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id   = f"{entry.entry_id}_cec_active_source"
-        self._attr_name        = "CEC Active Source"
-        self._attr_icon        = "mdi:hdmi-port"
+        self._attr_unique_id = f"{entry.entry_id}_cec_active_source"
+        self._attr_name = "CEC Active Source"
+        self._attr_icon = "mdi:hdmi-port"
         self._attr_device_info = _DEVICE(entry)
 
     @property

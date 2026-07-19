@@ -1,4 +1,5 @@
 """Root conftest — makes custom_components importable from the repo root."""
+
 import sys
 from pathlib import Path
 

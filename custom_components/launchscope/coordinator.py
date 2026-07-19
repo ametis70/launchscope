@@ -1,4 +1,5 @@
 """DataUpdateCoordinator for Launchscope."""
+
 from __future__ import annotations
 
 import asyncio
@@ -16,10 +17,12 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class LauncherCoordinator(DataUpdateCoordinator):
-    def __init__(self, hass: HomeAssistant, host: str, port: int, api_key: str, scan_interval: int = 10) -> None:
+    def __init__(
+        self, hass: HomeAssistant, host: str, port: int, api_key: str, scan_interval: int = 10
+    ) -> None:
         self.base_url = f"http://{host}:{port}"
-        self.headers  = {"X-Api-Key": api_key}
-        self._session  = async_get_clientsession(hass)
+        self.headers = {"X-Api-Key": api_key}
+        self._session = async_get_clientsession(hass)
         super().__init__(
             hass,
             _LOGGER,

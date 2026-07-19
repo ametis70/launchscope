@@ -1,21 +1,18 @@
-self:
-{
+self: {
   config,
   lib,
   pkgs,
   ...
 }:
-
 # Home Manager module for Launchscope.
 #
 # Writes config files:
 #   ~/.config/launchscope/config.json   — UI settings
 #   ~/.config/launchscoped/apps.json    — app list for the daemon
 #   ~/.config/launchscoped/config.json  — daemon settings
-
 let
   cfg = config.programs.launchscope;
-  fmt = pkgs.formats.json { };
+  fmt = pkgs.formats.json {};
   selfPkgs = self.packages.${pkgs.system};
 
   # Nerd Fonts supported by the module.
@@ -116,30 +113,32 @@ let
     };
     extra_flags = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [ ];
+      default = [];
     };
   };
 
-  gamescopeOpts = { ... }: { options = gamescopeBaseOptions; };
+  gamescopeOpts = {...}: {options = gamescopeBaseOptions;};
 
   # Per-app gamescope adds an 'enabled' toggle.
-  gamescopeAppOpts = { ... }: {
-    options = gamescopeBaseOptions // {
-      enabled = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
+  gamescopeAppOpts = {...}: {
+    options =
+      gamescopeBaseOptions
+      // {
+        enabled = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+        };
       };
-    };
   };
 
-  appOpts = { ... }: {
+  appOpts = {...}: {
     options = {
-      id = lib.mkOption { type = lib.types.strMatching "[a-z0-9_-]+"; };
-      name = lib.mkOption { type = lib.types.str; };
-      exec = lib.mkOption { type = lib.types.str; };
+      id = lib.mkOption {type = lib.types.strMatching "[a-z0-9_-]+";};
+      name = lib.mkOption {type = lib.types.str;};
+      exec = lib.mkOption {type = lib.types.str;};
       gamescope = lib.mkOption {
         type = lib.types.submodule gamescopeAppOpts;
-        default = { };
+        default = {};
       };
     };
   };
@@ -154,37 +153,36 @@ let
     scale = cfg.settings.ui.scale;
     display = cfg.settings.ui.display;
     background = cfg.settings.ui.background;
-    idle = {
-      dim_timeout           = cfg.settings.ui.idle.dim_timeout;
-      blank_timeout         = cfg.settings.ui.idle.blank_timeout;
-      blank_mode            = cfg.settings.ui.idle.blank_mode;
-      cec_activate_on_start = cfg.settings.ui.idle.cec_activate_on_start;
-      cec_poll_interval     = cfg.settings.ui.idle.cec_poll_interval;
-      cec_poll_mode         = cfg.settings.ui.idle.cec_poll_mode;
-    }
-    // lib.optionalAttrs (cfg.settings.ui.idle.blank_off != "") {
-      blank_off = cfg.settings.ui.idle.blank_off;
-    }
-    // lib.optionalAttrs (cfg.settings.ui.idle.blank_on != "") {
-      blank_on = cfg.settings.ui.idle.blank_on;
-    };
+    idle =
+      {
+        dim_timeout = cfg.settings.ui.idle.dim_timeout;
+        blank_timeout = cfg.settings.ui.idle.blank_timeout;
+        blank_mode = cfg.settings.ui.idle.blank_mode;
+        cec_activate_on_start = cfg.settings.ui.idle.cec_activate_on_start;
+        cec_poll_interval = cfg.settings.ui.idle.cec_poll_interval;
+        cec_poll_mode = cfg.settings.ui.idle.cec_poll_mode;
+      }
+      // lib.optionalAttrs (cfg.settings.ui.idle.blank_off != "") {
+        blank_off = cfg.settings.ui.idle.blank_off;
+      }
+      // lib.optionalAttrs (cfg.settings.ui.idle.blank_on != "") {
+        blank_on = cfg.settings.ui.idle.blank_on;
+      };
   };
 
   daemonConfig = fmt.generate "launchscoped-config.json" {
-    api = {
-      port = cfg.settings.api.port;
-    }
-    // lib.optionalAttrs (cfg.settings.api.api_key_file != "") {
-      api_key_file = cfg.settings.api.api_key_file;
-    };
+    api =
+      {
+        port = cfg.settings.api.port;
+      }
+      // lib.optionalAttrs (cfg.settings.api.api_key_file != "") {
+        api_key_file = cfg.settings.api.api_key_file;
+      };
     cec = cfg.settings.cec;
   };
   appsConfig = fmt.generate "launchscoped-apps.json" cfg.settings.apps;
-
-in
-{
+in {
   options.programs.launchscope = {
-
     enable = lib.mkEnableOption "Launchscope HTPC launcher";
 
     package = lib.mkOption {
@@ -297,7 +295,7 @@ in
 
         display = lib.mkOption {
           type = lib.types.submodule gamescopeOpts;
-          default = { };
+          default = {};
           description = "Gamescope session config for the launcher window.";
         };
 
@@ -333,7 +331,7 @@ in
             description = "Seconds of inactivity before blanking the display. 0 = disabled (default).";
           };
           blank_mode = lib.mkOption {
-            type = lib.types.enum [ "wlopm" "cec" ];
+            type = lib.types.enum ["wlopm" "cec"];
             default = "wlopm";
             description = ''
               Blank mode. "wlopm" runs the blank_off/blank_on shell commands (default).
@@ -376,7 +374,7 @@ in
             '';
           };
           cec_poll_mode = lib.mkOption {
-            type = lib.types.enum [ "http" ];
+            type = lib.types.enum ["http"];
             default = "http";
             description = ''
               CEC state polling mode. "http" polls /api/cec/state over HTTP.
@@ -388,14 +386,13 @@ in
 
       apps = lib.mkOption {
         type = lib.types.listOf (lib.types.submodule appOpts);
-        default = [ ];
+        default = [];
         description = "Apps shown in the launcher.";
       };
     };
   };
 
   config = lib.mkIf cfg.enable {
-
     assertions = [
       {
         assertion = cfg.settings.ui.scale >= 0.5 && cfg.settings.ui.scale <= 3.0;
@@ -445,13 +442,13 @@ in
           "ENABLE_GAMESCOPE_WSI=1"
           # cec-client must be on PATH for the CEC activate endpoint.
           # Also include the user profile bin so app executables are found.
-          "PATH=${lib.makeBinPath [ pkgs.libcec ]}:/etc/profiles/per-user/%u/bin:/run/current-system/sw/bin"
+          "PATH=${lib.makeBinPath [pkgs.libcec]}:/etc/profiles/per-user/%u/bin:/run/current-system/sw/bin"
         ];
         # Disable core dumps for this service and all child processes
         # (gamescope crashes on some apps produce large, noisy core dumps).
         LimitCORE = "0";
       };
-      Install.WantedBy = [ "default.target" ];
+      Install.WantedBy = ["default.target"];
     };
   };
 }

@@ -15,17 +15,17 @@
 -- BaseModal.headerHeight(ui) → number   (static helper, delegates to Header)
 
 local Header = require("components.primitives.header")
-local T      = require("lib.theme")
+local T = require("lib.theme")
 
 local M = {}
 M.__index = M
 
 function M.new(title, content_w, content_h, ui)
-    local self     = setmetatable({}, M)
+    local self = setmetatable({}, M)
     self.content_w = content_w
     self.content_h = content_h
-    self.ui        = ui
-    self._header   = Header.new(title, ui)
+    self.ui = ui
+    self._header = Header.new(title, ui)
     return self
 end
 
@@ -39,13 +39,13 @@ function M:update(inp_layer, on_close)
 end
 
 function M:drawBegin(sw, sh)
-    local ui    = self.ui
-    local pad   = ui.padding
+    local ui = self.ui
+    local pad = ui.padding
     local hdr_h = Header.height(ui)
-    local pw    = self.content_w + pad * 2
-    local ph    = hdr_h + self.content_h + pad * 2
-    local px    = math.floor((sw - pw) / 2)
-    local py    = math.floor((sh - ph) / 2)
+    local pw = self.content_w + pad * 2
+    local ph = hdr_h + self.content_h + pad * 2
+    local px = math.floor((sw - pw) / 2)
+    local py = math.floor((sh - ph) / 2)
 
     -- Panel (no overlay here — stack.draw() handles the single overlay)
     love.graphics.setColor(T.PANEL)
@@ -57,11 +57,14 @@ function M:drawBegin(sw, sh)
     love.graphics.setColor(1, 1, 1, 1)
 
     return {
-        x  = px + pad,
-        y  = py + hdr_h + pad,
-        w  = self.content_w,
-        h  = self.content_h,
-        px = px, py = py, pw = pw, ph = ph,
+        x = px + pad,
+        y = py + hdr_h + pad,
+        w = self.content_w,
+        h = self.content_h,
+        px = px,
+        py = py,
+        pw = pw,
+        ph = ph,
         header_h = hdr_h,
     }
 end
