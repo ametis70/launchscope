@@ -11,24 +11,24 @@
 --   btn:width()       -- measure pill width without drawing
 
 local icons = require("lib.icons")
-local T     = require("lib.theme")
-local hit   = require("lib.hittest")
+local T = require("lib.theme")
+local hit = require("lib.hittest")
 
 local Button = {}
 Button.__index = Button
 
 function Button.new(opts)
-    local self       = setmetatable({}, Button)
-    self.icon        = opts.icon  or ""
-    self.label       = opts.label or ""
-    self.ui          = opts.ui
-    self.on_select   = opts.on_select or nil
-    self.focused     = false
-    self._rect       = { 0, 0, 0, 0 }
-    self._font       = newFont(T.FONT_UI)
+    local self = setmetatable({}, Button)
+    self.icon = opts.icon or ""
+    self.label = opts.label or ""
+    self.ui = opts.ui
+    self.on_select = opts.on_select or nil
+    self.focused = false
+    self._rect = { 0, 0, 0, 0 }
+    self._font = newFont(T.FONT_UI)
     -- Smaller icon font for aux buttons (uses ui_icon_size if available).
-    local isz        = opts.ui.ui_icon_size or T.FONT_UI
-    self._icon_font  = newFont(isz)
+    local isz = opts.ui.ui_icon_size or T.FONT_UI
+    self._icon_font = newFont(isz)
     return self
 end
 
@@ -40,10 +40,10 @@ function Button:setPos(x, y)
 end
 
 function Button:width()
-    local ui    = self.ui
+    local ui = self.ui
     local pad_x = math.floor(ui.font_size * 0.6)
-    local iw    = icons.width(self.icon, self._icon_font)
-    local isep  = iw > 0 and math.floor(ui.font_size * 0.25) + 4 or 0
+    local iw = icons.width(self.icon, self._icon_font)
+    local isep = iw > 0 and math.floor(ui.font_size * 0.25) + 4 or 0
     return pad_x + iw + isep + self._font:getWidth(self.label) + pad_x
 end
 
@@ -69,22 +69,24 @@ function Button:update(inp)
         end
         -- Mouse click is handled here; keyboard/gamepad SELECT is handled by the caller.
         if self.focused and inp.wasPressed("SELECT") then
-            if self.on_select then self.on_select() end
+            if self.on_select then
+                self.on_select()
+            end
         end
     end
 end
 
 function Button:draw()
-    local ui    = self.ui
-    local x, y  = self._rect[1], self._rect[2]
+    local ui = self.ui
+    local x, y = self._rect[1], self._rect[2]
     local w, bh = self:width(), self:height()
     local pad_x = math.floor(ui.font_size * 0.6)
-    local r     = math.floor(ui.font_size * 0.2)
-    local ih    = icons.height(self._icon_font)
-    local fh    = self._font:getHeight()
-    local iw    = icons.width(self.icon, self._icon_font)
-    local isep  = iw > 0 and math.floor(ui.font_size * 0.25) + 4 or 0
-    local col   = self.focused and T.BTN_FOCUSED or T.BTN_NORMAL
+    local r = math.floor(ui.font_size * 0.2)
+    local ih = icons.height(self._icon_font)
+    local fh = self._font:getHeight()
+    local iw = icons.width(self.icon, self._icon_font)
+    local isep = iw > 0 and math.floor(ui.font_size * 0.25) + 4 or 0
+    local col = self.focused and T.BTN_FOCUSED or T.BTN_NORMAL
 
     -- Background: dimmer when unfocused, no outline ever
     local bg_col = self.focused and T.BTN_BG or { 1, 1, 1, 0.04 }

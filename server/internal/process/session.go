@@ -22,7 +22,7 @@ const killTimeout = 5 * time.Second
 type Session struct {
 	cmd  *exec.Cmd
 	done chan struct{} // closed when cmd.Wait() returns
-	err  error        // exit error from cmd.Wait(), guarded by mu
+	err  error         // exit error from cmd.Wait(), guarded by mu
 	mu   sync.Mutex
 }
 

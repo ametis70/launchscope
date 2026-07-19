@@ -21,7 +21,7 @@
 --   -- Static helpers:
 --   Header.height(ui)   → pixel height of the header bar
 
-local T   = require("lib.theme")
+local T = require("lib.theme")
 local hit = require("lib.hittest")
 
 local Header = {}
@@ -39,11 +39,11 @@ function Header.height(ui)
 end
 
 function Header.new(title, ui)
-    local self        = setmetatable({}, Header)
-    self.title        = title
-    self.ui           = ui
-    self.font         = newFont(T.FONT_UI)
-    self._close_rect  = nil
+    local self = setmetatable({}, Header)
+    self.title = title
+    self.ui = ui
+    self.font = newFont(T.FONT_UI)
+    self._close_rect = nil
     self._focus_close = false
     return self
 end
@@ -53,8 +53,12 @@ end
 -- Returns true if the event was consumed.
 function Header:update(inp, on_close)
     if inp.wasPressed("BACK") then
-        if _G.sound then _G.sound.select() end
-        if on_close then on_close() end
+        if _G.sound then
+            _G.sound.select()
+        end
+        if on_close then
+            on_close()
+        end
         return true
     end
 
@@ -70,8 +74,12 @@ function Header:update(inp, on_close)
             _G.cursor.set(self._focus_close and "pointer" or "normal")
         end
         if self._focus_close and inp.wasPressed("SELECT") then
-            if _G.sound then _G.sound.select() end
-            if on_close then on_close() end
+            if _G.sound then
+                _G.sound.select()
+            end
+            if on_close then
+                on_close()
+            end
             return true
         end
     end
@@ -85,10 +93,10 @@ end
 -- Returns the y coordinate directly below the separator line
 -- (i.e. where content should begin).
 function Header:draw(px, py, pw)
-    local ui  = self.ui
+    local ui = self.ui
     local pad = ui.padding
-    local fh  = self.font:getHeight()
-    local hh  = fh + pad * 2   -- header height
+    local fh = self.font:getHeight()
+    local hh = fh + pad * 2 -- header height
 
     -- Title
     love.graphics.setFont(self.font)
@@ -96,7 +104,7 @@ function Header:draw(px, py, pw)
     love.graphics.print(self.title, px + pad, py + pad)
 
     -- Close icon: always rendered, dimmed normally, full white on hover.
-    local ic     = _icons()
+    local ic = _icons()
     local icon_w = ic and ic.width("close") or 0
     if icon_w > 0 then
         local cx = px + pw - icon_w - pad
@@ -113,7 +121,7 @@ function Header:draw(px, py, pw)
     love.graphics.rectangle("fill", px, py + hh, pw, 1)
 
     love.graphics.setColor(1, 1, 1, 1)
-    return py + hh   -- bottom of header (separator line y)
+    return py + hh -- bottom of header (separator line y)
 end
 
 return Header

@@ -252,7 +252,6 @@ func makeCECPostStateHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
 	}
 }
 
-
 // makeCECActivateHandler powers on TV + AVR, waits, then sets active source.
 func makeCECActivateHandler(c *cec.Client, log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

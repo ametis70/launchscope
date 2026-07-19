@@ -10,24 +10,24 @@
 -- min_h:     optional minimum pill height in pixels.
 
 local icons = require("lib.icons")
-local T     = require("lib.theme")
+local T = require("lib.theme")
 
 local M = {}
 
 function M.draw(icon_name, label, color, x, y, ui, font, icon_font, min_h)
     font = font or love.graphics.getFont()
 
-    local fh  = font:getHeight()
-    local ih  = icons.height(icon_font)
+    local fh = font:getHeight()
+    local ih = icons.height(icon_font)
     -- Pill height: at least min_h, at least enough to hold the text with padding.
-    local pad  = math.floor(ui.font_size * 0.2)
-    local h    = math.max(min_h or 0, fh + pad * 2)
+    local pad = math.floor(ui.font_size * 0.2)
+    local h = math.max(min_h or 0, fh + pad * 2)
 
-    local iw  = icons.width(icon_name, icon_font)
+    local iw = icons.width(icon_name, icon_font)
     local sep = (iw > 0) and math.floor(ui.font_size * 0.2) + 4 or 0
-    local tw  = font:getWidth(label)
+    local tw = font:getWidth(label)
     local pad_h = T.ROW_PAD_H
-    local w   = pad_h + iw + sep + tw + pad_h
+    local w = pad_h + iw + sep + tw + pad_h
 
     local radius = math.floor(ui.font_size * 0.25)
 

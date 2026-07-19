@@ -1,4 +1,5 @@
 """Tests for LauncherCoordinator."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -49,6 +50,7 @@ async def test_update_data_http_error_raises(hass, coordinator):
 
 async def test_update_data_connection_error_raises(hass, coordinator):
     from aiohttp import ClientConnectionError
+
     coordinator._session.get = MagicMock(side_effect=ClientConnectionError("refused"))
 
     with pytest.raises(UpdateFailed):

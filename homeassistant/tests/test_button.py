@@ -1,4 +1,5 @@
 """Tests for button entities."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -26,6 +27,7 @@ def make_button(cls, data):
 
 # ── LaunchscopeStopButton ─────────────────────────────────────────────────  #
 
+
 def test_stop_button_available_when_app_running():
     btn = make_button(LaunchscopeStopButton, STATUS_APP_RUNNING)
     assert btn.available is True
@@ -50,6 +52,7 @@ async def test_stop_button_press():
 
 # ── LaunchscopeCECActivateButton ──────────────────────────────────────────  #
 
+
 async def test_cec_activate_press():
     btn = make_button(LaunchscopeCECActivateButton, STATUS_IDLE)
     await btn.async_press()
@@ -62,6 +65,7 @@ def test_cec_activate_icon():
 
 
 # ── LaunchscopeCECStandbyButton ───────────────────────────────────────────  #
+
 
 async def test_cec_standby_press():
     btn = make_button(LaunchscopeCECStandbyButton, STATUS_IDLE)
@@ -76,6 +80,7 @@ def test_cec_standby_icon():
 
 # ── LaunchscopeCECSwitchInputButton ──────────────────────────────────────── #
 
+
 async def test_cec_switch_input_press():
     btn = make_button(LaunchscopeCECSwitchInputButton, STATUS_IDLE)
     await btn.async_press()
@@ -88,6 +93,7 @@ def test_cec_switch_input_icon():
 
 
 # ── unique_id uniqueness ──────────────────────────────────────────────────  #
+
 
 def test_unique_ids_are_distinct():
     ids = {

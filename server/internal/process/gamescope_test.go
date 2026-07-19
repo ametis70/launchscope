@@ -113,9 +113,12 @@ func TestAppArgv_GamescopeEnabled_Defaults(t *testing.T) {
 	}
 	assertContains(t, got, "-f")
 	// Defaults: 1920x1080@60.
-	assertContains(t, got, "-W"); assertNextEq(t, got, "-W", "1920")
-	assertContains(t, got, "-H"); assertNextEq(t, got, "-H", "1080")
-	assertContains(t, got, "-r"); assertNextEq(t, got, "-r", "60")
+	assertContains(t, got, "-W")
+	assertNextEq(t, got, "-W", "1920")
+	assertContains(t, got, "-H")
+	assertNextEq(t, got, "-H", "1080")
+	assertContains(t, got, "-r")
+	assertNextEq(t, got, "-r", "60")
 	// Separator present.
 	assertContains(t, got, "--")
 	// Exec at end.
@@ -178,8 +181,10 @@ func TestAppArgv_GamescopeEnabled_FilterWithScaling(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Should auto-select "fit" scaler when inner != output and no explicit scaler.
-	assertContains(t, got, "-S"); assertNextEq(t, got, "-S", "fit")
-	assertContains(t, got, "-F"); assertNextEq(t, got, "-F", "fsr")
+	assertContains(t, got, "-S")
+	assertNextEq(t, got, "-S", "fit")
+	assertContains(t, got, "-F")
+	assertNextEq(t, got, "-F", "fsr")
 }
 
 func TestAppArgv_GamescopeEnabled_FilterNoScalingOmitsS(t *testing.T) {
@@ -283,8 +288,8 @@ func TestAppArgv_ExtraFlags(t *testing.T) {
 
 func TestAppArgv_UnclosedExecQuote(t *testing.T) {
 	app := &apps.App{
-		ID:   "test",
-		Exec: `cmd "unclosed`,
+		ID:        "test",
+		Exec:      `cmd "unclosed`,
 		Gamescope: apps.GamescopeConfig{Enabled: true},
 	}
 	_, err := AppArgv(app)
@@ -423,8 +428,8 @@ func TestSplitExec_OnlySpaces(t *testing.T) {
 
 func TestAppArgv_ExecWithQuotedSpaces(t *testing.T) {
 	app := &apps.App{
-		ID:   "test",
-		Exec: `"my app" --arg`,
+		ID:        "test",
+		Exec:      `"my app" --arg`,
 		Gamescope: apps.GamescopeConfig{Enabled: false},
 	}
 	got, err := AppArgv(app)

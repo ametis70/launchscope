@@ -1,7 +1,10 @@
-{ lib, buildGoModule, ... }:
-
+{
+  lib,
+  buildGoModule,
+  ...
+}:
 buildGoModule {
-  pname   = "launchscoped";
+  pname = "launchscoped";
   version = "0.1.0";
 
   # The server/ subdirectory is the Go module root.
@@ -9,12 +12,12 @@ buildGoModule {
 
   vendorHash = "sha256-0Qxw+MUYVgzgWB8vi3HBYtVXSq/btfh4ZfV/m1chNrA=";
 
-  subPackages = [ "cmd/launchscoped" ];
+  subPackages = ["cmd/launchscoped"];
 
   meta = {
     description = "Launchscope HTPC launcher — server daemon";
     mainProgram = "launchscoped";
-    platforms   = lib.platforms.linux;
-    license     = lib.licenses.agpl3Only;
+    platforms = lib.platforms.linux;
+    license = lib.licenses.agpl3Only;
   };
 }

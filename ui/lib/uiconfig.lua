@@ -52,32 +52,32 @@ local M = {}
 -- ── Defaults ──────────────────────────────────────────────────────────── --
 
 local DEFAULTS = {
-    session_mode    = "drm_gamescope",
-    process_mode    = "daemon",
-    ui_volume       = 0.5,
-    font      = nil,
-    icons     = "pixel",
+    session_mode = "drm_gamescope",
+    process_mode = "daemon",
+    ui_volume = 0.5,
+    font = nil,
+    icons = "pixel",
     icon_size = nil,
-    scale     = 1.0,
-    display   = {
+    scale = 1.0,
+    display = {
         fullscreen = true,
-        output     = { width = 1920, height = 1080, refresh = 60 },
-        inner      = nil,
+        output = { width = 1920, height = 1080, refresh = 60 },
+        inner = nil,
     },
     background = {
-        type    = "shader",
+        type = "shader",
         animate = true,
-        color   = "#0d1440",
+        color = "#0d1440",
     },
     idle = {
-        dim_timeout           = 60,
-        blank_timeout         = 0,
-        blank_mode            = "wlopm",
+        dim_timeout = 60,
+        blank_timeout = 0,
+        blank_mode = "wlopm",
         cec_activate_on_start = true,
-        blank_off             = nil,
-        blank_on              = nil,
-        cec_poll_interval     = 5,
-        cec_poll_mode         = "http",
+        blank_off = nil,
+        blank_on = nil,
+        cec_poll_interval = 5,
+        cec_poll_mode = "http",
     },
 }
 
@@ -96,7 +96,9 @@ end
 
 local function readJSON(path)
     local fh = io.open(path, "r")
-    if not fh then return nil end
+    if not fh then
+        return nil
+    end
     local raw = fh:read("*a")
     fh:close()
     local ok, data = pcall(json.decode, raw)
@@ -155,16 +157,24 @@ end
 -- directory, merges them, applies defaults, and returns the result.
 -- The LAUNCHSCOPE_FONT env var overrides cfg.font if set (dev/override use).
 function M.load()
-    local dir  = configDir()
+    local dir = configDir()
     local base = readJSON(dir .. "/config.json") or {}
     local over = readJSON(dir .. "/config.override.json") or {}
-    local cfg  = applyDefaults(deepMerge(base, over))
+    local cfg = applyDefaults(deepMerge(base, over))
 
     -- Normalise legacy icon mode values → "pixel".
-    if cfg.icons == true    then cfg.icons = "unicode" end
-    if cfg.icons == false   then cfg.icons = "none"    end
-    if cfg.icons == "svg"   then cfg.icons = "pixel"   end
-    if cfg.icons == "png"   then cfg.icons = "pixel"   end
+    if cfg.icons == true then
+        cfg.icons = "unicode"
+    end
+    if cfg.icons == false then
+        cfg.icons = "none"
+    end
+    if cfg.icons == "svg" then
+        cfg.icons = "pixel"
+    end
+    if cfg.icons == "png" then
+        cfg.icons = "pixel"
+    end
 
     -- Env var overrides (highest priority — set by wrapper script or operator).
     local session_env = os.getenv("LAUNCHSCOPE_SESSION_MODE")
@@ -189,13 +199,15 @@ end
 -- when the base file is a symlink, i.e. Nix-managed).
 -- Returns true on success, or false + error string on failure.
 function M.save(cfg)
-    local dir      = configDir()
+    local dir = configDir()
     local basePath = dir .. "/config.json"
 
     -- Detect if base is a symlink (Nix-managed) — write to override instead.
     local path = basePath
     local fh = io.open(basePath, "r")
-    if fh then fh:close() end
+    if fh then
+        fh:close()
+    end
     -- io doesn't expose lstat; use a heuristic: try to open for writing.
     -- If it fails but reading succeeded, it's likely read-only (Nix store).
     local writable = io.open(basePath, "a")

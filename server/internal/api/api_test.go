@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/ametis70/launchscope/server/internal/api"
 	"github.com/ametis70/launchscope/server/internal/apps"
 	"github.com/ametis70/launchscope/server/internal/audio"
 	"github.com/ametis70/launchscope/server/internal/config"
 	"github.com/ametis70/launchscope/server/internal/events"
 	"github.com/ametis70/launchscope/server/internal/process"
+	"github.com/gorilla/websocket"
 
 	"io"
 	"log/slog"

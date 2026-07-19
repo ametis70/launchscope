@@ -53,12 +53,12 @@ func NewRouter(
 	mux.HandleFunc("POST /api/audio/mute", h.postAudioMute)
 
 	// CEC
-	mux.HandleFunc("GET /api/cec/state",       makeCECGetStateHandler(cecClient))
-	mux.HandleFunc("POST /api/cec/state",      makeCECPostStateHandler(cecClient, log))
-	mux.HandleFunc("POST /api/cec/activate",   makeCECActivateHandler(cecClient, log))
-	mux.HandleFunc("POST /api/cec/power-on",   makeCECPowerOnHandler(cecClient, log))
+	mux.HandleFunc("GET /api/cec/state", makeCECGetStateHandler(cecClient))
+	mux.HandleFunc("POST /api/cec/state", makeCECPostStateHandler(cecClient, log))
+	mux.HandleFunc("POST /api/cec/activate", makeCECActivateHandler(cecClient, log))
+	mux.HandleFunc("POST /api/cec/power-on", makeCECPowerOnHandler(cecClient, log))
 	mux.HandleFunc("POST /api/cec/set-source", makeCECSetSourceHandler(cecClient, log))
-	mux.HandleFunc("POST /api/cec/standby",    makeCECStandbyHandler(cecClient, log))
+	mux.HandleFunc("POST /api/cec/standby", makeCECStandbyHandler(cecClient, log))
 
 	// Daemon config (read-only; API key is redacted)
 	mux.HandleFunc("GET /api/config", h.getConfig)

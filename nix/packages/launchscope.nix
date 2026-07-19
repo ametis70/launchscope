@@ -1,5 +1,14 @@
-{ lib, stdenv, love, lua5_4, zip, makeWrapper, gamescope, wlopm, sdl_gamecontrollerdb }:
-
+{
+  lib,
+  stdenv,
+  love,
+  lua5_4,
+  zip,
+  makeWrapper,
+  gamescope,
+  wlopm,
+  sdl_gamecontrollerdb,
+}:
 # LÖVE2D apps are distributed as .love archives (zip files containing Lua
 # sources). This derivation:
 #   1. Zips ui/ into launchscope.love, injecting gamecontrollerdb.txt from
@@ -9,15 +18,14 @@
 #      optionally prepends gamescope based on session_mode.
 #
 # Fonts are NOT bundled. The UI resolves fonts at runtime via fc-match(1).
-
 stdenv.mkDerivation {
-  pname   = "launchscope";
+  pname = "launchscope";
   version = "0.1.0";
 
   src = ../../ui;
 
-  nativeBuildInputs = [ zip makeWrapper ];
-  buildInputs       = [ lua5_4 gamescope wlopm ];
+  nativeBuildInputs = [zip makeWrapper];
+  buildInputs = [lua5_4 gamescope wlopm];
 
   dontBuild = false;
 
@@ -48,7 +56,7 @@ stdenv.mkDerivation {
     # love with or without gamescope depending on session_mode.
     # wlopm is added to PATH for idle screen blanking in DRM/gamescope mode.
     makeWrapper ${love}/bin/love $out/bin/launchscope \
-      --prefix PATH : ${lib.makeBinPath [ wlopm ]} \
+      --prefix PATH : ${lib.makeBinPath [wlopm]} \
       --run '
         eval $(${lua5_4}/bin/lua '"$out/share/launchscope/gamescope-args.lua"' 2>/dev/null)
         if [ -n "$GS_ARGS" ]; then
@@ -63,7 +71,7 @@ stdenv.mkDerivation {
   meta = {
     description = "Launchscope HTPC launcher — LÖVE2D frontend";
     mainProgram = "launchscope";
-    platforms   = lib.platforms.linux;
-    license     = lib.licenses.agpl3Only;
+    platforms = lib.platforms.linux;
+    license = lib.licenses.agpl3Only;
   };
 }

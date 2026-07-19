@@ -9,43 +9,43 @@
 --   font                  (optional) love.Font override
 --   on_select             function(item) called on SELECT
 
-local T   = require("lib.theme")
+local T = require("lib.theme")
 local hit = require("lib.hittest")
 
 local List = {}
 List.__index = List
 
 function List.new(items, opts)
-    local self      = setmetatable({}, List)
-    self.x          = opts.x      or 0
-    self.y          = opts.y      or 0
-    self.width      = opts.width  or 400
-    self.ui         = opts.ui
-    self.font       = opts.font   or newFont(T.FONT_LG)
-    self.on_select  = opts.on_select
-    self.item_h     = self.ui.item_height
-    self.arrow_h    = math.floor(self.item_h * 0.6)
-    self.height     = opts.height or (self.item_h * 5)
-    self.vis_count  = math.max(1, math.floor(self.height / self.item_h))
+    local self = setmetatable({}, List)
+    self.x = opts.x or 0
+    self.y = opts.y or 0
+    self.width = opts.width or 400
+    self.ui = opts.ui
+    self.font = opts.font or newFont(T.FONT_LG)
+    self.on_select = opts.on_select
+    self.item_h = self.ui.item_height
+    self.arrow_h = math.floor(self.item_h * 0.6)
+    self.height = opts.height or (self.item_h * 5)
+    self.vis_count = math.max(1, math.floor(self.height / self.item_h))
     -- Optional narrower highlight width; falls back to full column width.
-    self.item_w     = opts.item_w or self.width
-    self.items      = {}
-    self.focused    = 1
-    self.offset     = 0
-    self.active     = true   -- false = suppress focused highlight
-    self._rects     = {}     -- [i] = {x, y, w, h} for each visible item
+    self.item_w = opts.item_w or self.width
+    self.items = {}
+    self.focused = 1
+    self.offset = 0
+    self.active = true -- false = suppress focused highlight
+    self._rects = {} -- [i] = {x, y, w, h} for each visible item
     -- Mouse interaction tracking: don't engage hover until the mouse actually moves.
     self._mouse_interacted = false
-    self._last_mx          = -1
-    self._last_my          = -1
+    self._last_mx = -1
+    self._last_my = -1
     self:setItems(items or {})
     return self
 end
 
 function List:setItems(items)
-    self.items   = items
+    self.items = items
     self.focused = math.min(self.focused, math.max(1, #items))
-    self.offset  = 0
+    self.offset = 0
     self:_clampOffset()
 end
 
@@ -55,23 +55,33 @@ end
 
 function List:update(dt, inp)
     local n = #self.items
-    if n == 0 then return end
+    if n == 0 then
+        return
+    end
 
     -- Keyboard / gamepad navigation
     if inp.device() ~= "mouse" then
         if inp.wasPressed("UP") then
             self.focused = self.focused - 1
-            if self.focused < 1 then self.focused = n end
+            if self.focused < 1 then
+                self.focused = n
+            end
             self.active = true
             self:_clampOffset()
-            if _G.sound then _G.sound.navigate() end
+            if _G.sound then
+                _G.sound.navigate()
+            end
         end
         if inp.wasPressed("DOWN") then
             self.focused = self.focused + 1
-            if self.focused > n then self.focused = 1 end
+            if self.focused > n then
+                self.focused = 1
+            end
             self.active = true
             self:_clampOffset()
-            if _G.sound then _G.sound.navigate() end
+            if _G.sound then
+                _G.sound.navigate()
+            end
         end
     end
 
@@ -80,13 +90,13 @@ function List:update(dt, inp)
     -- the list was built — prevents gamescope's virtual pointer at boot
     -- from immediately clearing the keyboard focus highlight.
     if inp.device() == "mouse" and self._mouse_interacted then
-        local mx, my  = inp.mouseX(), inp.mouseY()
+        local mx, my = inp.mouseX(), inp.mouseY()
         local any_hit = false
         for idx, r in pairs(self._rects) do
             if hit(mx, my, r) then
                 self.focused = idx
-                self.active  = true
-                any_hit      = true
+                self.active = true
+                any_hit = true
                 self:_clampOffset()
                 break
             end
@@ -100,29 +110,33 @@ function List:update(dt, inp)
     end
 
     -- Mark that the mouse has genuinely interacted once it moves.
-    if inp.device() == "mouse" and (inp.mouseX() ~= self._last_mx or inp.mouseY() ~= self._last_my) then
+    if
+        inp.device() == "mouse" and (inp.mouseX() ~= self._last_mx or inp.mouseY() ~= self._last_my)
+    then
         self._mouse_interacted = true
         self._last_mx = inp.mouseX()
         self._last_my = inp.mouseY()
     end
 
     if inp.wasPressed("SELECT") and self.active and self.on_select then
-        if _G.sound then _G.sound.select() end
+        if _G.sound then
+            _G.sound.select()
+        end
         self.on_select(self.items[self.focused])
     end
 end
 
 function List:draw()
-    local x     = self.x
-    local y     = self.y
-    local w     = self.width
-    local ih    = self.item_h
-    local ah    = self.arrow_h
-    local font  = self.font
+    local x = self.x
+    local y = self.y
+    local w = self.width
+    local ih = self.item_h
+    local ah = self.arrow_h
+    local font = self.font
     local items = self.items
-    local n     = #items
+    local n = #items
 
-    local can_up   = self.offset > 0
+    local can_up = self.offset > 0
     local can_down = self.offset + self.vis_count < n
 
     love.graphics.setFont(font)
@@ -133,9 +147,11 @@ function List:draw()
 
     self._rects = {}
     for i = 1, self.vis_count do
-        local idx    = self.offset + i
-        if idx > n then break end
-        local item   = items[idx]
+        local idx = self.offset + i
+        if idx > n then
+            break
+        end
+        local item = items[idx]
         local item_y = y + (i - 1) * ih
         local focused = (idx == self.focused) and self.active
         -- Hit/highlight rect is item_w wide, centred in the column — matches the bg highlight.
@@ -162,7 +178,10 @@ end
 
 function List:_clampOffset()
     local n = #self.items
-    if n == 0 then self.offset = 0; return end
+    if n == 0 then
+        self.offset = 0
+        return
+    end
     if self.focused > self.offset + self.vis_count then
         self.offset = self.focused - self.vis_count
     end
