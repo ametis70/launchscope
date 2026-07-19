@@ -22,7 +22,7 @@ type APIConfig struct {
 
 // CECConfig controls the optional HDMI-CEC integration.
 // When Enabled is true, the /api/cec/* endpoints are active and send
-// commands to the cec-uinput Unix socket at /run/cec-uinput/cmd.sock.
+// commands to the launchscope-cec Unix socket at /run/launchscope-cec/cmd.sock.
 type CECConfig struct {
 	Enabled bool `json:"enabled"`
 }

@@ -1,6 +1,6 @@
-// Package cec provides HDMI-CEC control via the cec-uinput bridge socket.
-// The cec-uinput service maintains a persistent cec-client connection and
-// exposes a Unix socket at /run/cec-uinput/cmd.sock for command injection.
+// Package cec provides HDMI-CEC control via the launchscope-cec bridge socket.
+// The launchscope-cec service maintains a persistent libcec connection and
+// exposes a Unix socket at /run/launchscope-cec/cmd.sock for command injection.
 package cec
 
 import (
@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const socketPath = "/run/cec-uinput/cmd.sock"
+const socketPath = "/run/launchscope-cec/cmd.sock"
 const activateThrottle = 3 * time.Second
 
 // State holds the last-known CEC device state pushed by cec-uinput.
@@ -21,7 +21,7 @@ type State struct {
 	IsActiveSource bool  `json:"is_active_source"` // active_source == own logical addr (1)
 }
 
-// Client sends CEC commands via the cec-uinput Unix socket and stores
+// Client sends CEC commands via the launchscope-cec Unix socket and stores
 // the last-known CEC state pushed by the bridge.
 type Client struct {
 	mu           sync.Mutex
@@ -74,7 +74,7 @@ func (c *Client) Standby() error { return c.send("standby") }
 func (c *Client) send(cmd string) error {
 	conn, err := net.DialTimeout("unix", socketPath, 3*time.Second)
 	if err != nil {
-		return fmt.Errorf("cannot connect to cec-uinput socket %s: %w", socketPath, err)
+		return fmt.Errorf("cannot connect to launchscope-cec socket %s: %w", socketPath, err)
 	}
 	defer conn.Close()
 	if err := conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {

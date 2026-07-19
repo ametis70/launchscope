@@ -1,36 +1,38 @@
 #!/usr/bin/env python3
 """
-CEC → uinput bridge for Pulse-Eight USB CEC adapter.
+HDMI-CEC bridge for Pulse-Eight USB CEC adapters.
 
-Uses the python-cec library (libcec bindings) for a single connection that
-handles both incoming remote key presses and outgoing CEC commands.
+Maintains a persistent libcec connection that provides bidirectional
+CEC integration with Launchscope:
 
-Remote key presses are forwarded as uinput keyboard events.
-Commands are received via a Unix socket at /run/cec-uinput/cmd.sock:
-  power-on     — power on the display (and AVR if configured)
-  set-source   — broadcast ActiveSource with CEC_SOURCE_ADDR
-  standby      — send standby to the AVR (or TV if no AVR)
-  activate     — power-on, wait CEC_ACTIVATE_DELAY, set-source
+  Input  — forwards TV remote key presses as uinput keyboard events.
+  Output — listens on a Unix socket at /run/launchscope-cec/cmd.sock
+           for commands from launchscoped.
+  State  — monitors the CEC bus for power and source changes, pushing
+           live state to launchscoped via HTTP.
+
+Socket commands:
+  activate     — ReportPhysicalAddress + DeviceVendorID + TextViewOn + ActiveSource
+  power-on     — TextViewOn to TV only (wake without switching input)
+  set-source   — ActiveSource broadcast (switch input without waking)
+  standby      — standby AVR (or TV if no AVR); skipped if not active source
 
 Two topologies are supported:
 
-  PC → TV directly (no AVR, CEC_AVR_DEVICE unset):
-    power-on  → power_on(TV)
-    standby   → standby(TV)
-    set_port  → set_port(TV, CEC_SOURCE_PORT)
+  PC → TV directly (CEC_HAS_AVR=0):
+    standby  → standby(TV)
 
-  PC → AVR → TV (CEC_AVR_DEVICE = 5):
-    power-on  → ImageViewOn(TV) — AVR wakes automatically on ActiveSource broadcast
-    standby   → standby(AVR) — TV powers off via signal loss
-    set_port  → set_port(AVR, CEC_SOURCE_PORT)
+  PC → AVR → TV (CEC_HAS_AVR=1, default):
+    standby  → standby(AVR) — TV powers off via signal loss
 
 Configuration via environment variables:
-  CEC_TV_DEVICE      logical address of the TV/projector (default: 0, always 0 per CEC spec)
-  CEC_AVR_DEVICE     logical address of the AVR/audio system (default: 5). Leave empty for no AVR.
-  CEC_SOURCE_PORT    HDMI port on the AVR (or TV if no AVR) the host PC is connected to (default: 1)
-  CEC_SOURCE_ADDR    physical address of the host PC on the CEC bus, e.g. "1.6.0.0".
-                     Run: echo 'scan' | cec-client -s -d 1
-  CEC_VERBOSE        set to 1 for verbose libcec logging (default: 0)
+  CEC_HAS_AVR            1 if an AVR is present (default: 1). AVR logical address
+                         is always 5 per the CEC spec.
+  CEC_SOURCE_ADDR        physical address of the host PC on the CEC bus, e.g. "1.6.0.0"
+                         (required). Run: echo 'scan' | cec-client -s -d 1
+  CEC_VERBOSE            set to 1 for verbose libcec logging (default: 0)
+  LAUNCHSCOPE_SERVER_URL URL of launchscoped for pushing CEC state
+                         (default: http://127.0.0.1:8765)
 """
 
 import cec
@@ -44,13 +46,12 @@ import urllib.request
 
 from evdev import UInput, ecodes as e
 
-SOCKET_PATH = "/run/cec-uinput/cmd.sock"
+SOCKET_PATH = "/run/launchscope-cec/cmd.sock"
 
-CEC_TV             = int(os.environ.get("CEC_TV_DEVICE",      "0"))
-CEC_AVR            = os.environ.get("CEC_AVR_DEVICE",     "")
-CEC_AVR            = int(CEC_AVR) if CEC_AVR != "" else None
-CEC_SOURCE_PORT    = int(os.environ.get("CEC_SOURCE_PORT",    "1"))
-CEC_SOURCE_ADDR    = os.environ.get("CEC_SOURCE_ADDR",        "")
+CEC_TV             = 0  # always 0 per CEC spec (TV logical address)
+CEC_AVR_LOGICAL    = 5  # always 5 per CEC spec (Audio System logical address)
+CEC_AVR            = CEC_AVR_LOGICAL if os.environ.get("CEC_HAS_AVR", "1") == "1" else None
+CEC_SOURCE_ADDR    = os.environ.get("CEC_SOURCE_ADDR", "")
 CEC_VERBOSE        = os.environ.get("CEC_VERBOSE", "0") == "1"
 SERVER_URL         = os.environ.get("LAUNCHSCOPE_SERVER_URL", "http://127.0.0.1:8765")
 SERVER_API_KEY     = os.environ.get("LAUNCHSCOPE_API_KEY", "")
@@ -144,7 +145,7 @@ def on_command(event, cmd):
             if _tv_on:
                 return
             _tv_on = True
-        print("cec-uinput: TV power on", flush=True)
+        print("launchscope-cec: TV power on", flush=True)
         push_state()
 
     # TV standby — Standby (0x36) broadcast from TV
@@ -154,7 +155,7 @@ def on_command(event, cmd):
                 return
             _tv_on  = False
             _avr_on = False
-        print("cec-uinput: TV standby — marking AVR off too", flush=True)
+        print("launchscope-cec: TV standby — marking AVR off too", flush=True)
         push_state()
 
     # AVR on/off — SetSystemAudioMode (0x72) from AVR
@@ -164,7 +165,7 @@ def on_command(event, cmd):
             if avr_on == _avr_on:
                 return
             _avr_on = avr_on
-        print(f"cec-uinput: AVR system audio → {'on' if avr_on else 'off'}", flush=True)
+        print(f"launchscope-cec: AVR system audio → {'on' if avr_on else 'off'}", flush=True)
         push_state()
 
     # ActiveSource (0x82) — device announcing itself as active source
@@ -176,7 +177,7 @@ def on_command(event, cmd):
                 return
             _active_source    = initiator
             _is_active_source = (initiator == OWN_LOGICAL)
-        print(f"cec-uinput: active source → logical {initiator} (us={_is_active_source})", flush=True)
+        print(f"launchscope-cec: active source → logical {initiator} (us={_is_active_source})", flush=True)
         push_state()
 
     # RoutingChange (0x80) from AVR — new physical addr in params[2:4]
@@ -192,7 +193,7 @@ def on_command(event, cmd):
                 return
             _active_source    = logical
             _is_active_source = (logical == OWN_LOGICAL)
-        print(f"cec-uinput: routing change → physical {new_phys.hex()} logical {logical}", flush=True)
+        print(f"launchscope-cec: routing change → physical {new_phys.hex()} logical {logical}", flush=True)
         push_state()
 
 
@@ -218,7 +219,7 @@ def push_state():
         )
         urllib.request.urlopen(req, timeout=5)
     except Exception as ex:
-        print(f"cec-uinput: push_state error: {ex}", flush=True)
+        print(f"launchscope-cec: push_state error: {ex}", flush=True)
 
 
 def parse_physical_addr(s):
@@ -251,7 +252,7 @@ def do_device_vendor_id():
 def do_set_source():
     global _active_source, _is_active_source
     if not CEC_SOURCE_ADDR:
-        print("cec-uinput: set-source — CEC_SOURCE_ADDR not set, falling back to set_active_source()", flush=True)
+        print("launchscope-cec: set-source — CEC_SOURCE_ADDR not set, falling back to set_active_source()", flush=True)
         cec.set_active_source()
     else:
         addr_bytes = parse_physical_addr(CEC_SOURCE_ADDR)
@@ -271,7 +272,7 @@ def do_standby():
     with _state_lock:
         active = _is_active_source
     if not active:
-        print("cec-uinput: standby — skipped, host PC is not the active source", flush=True)
+        print("launchscope-cec: standby — skipped, host PC is not the active source", flush=True)
         return
     if CEC_AVR is not None:
         cec.Device(CEC_AVR).standby()
@@ -283,38 +284,38 @@ def handle_command(cmd):
     """Handle a command received on the Unix socket."""
     cmd = cmd.strip().lower()
     if cmd == "power-on":
-        print(f"cec-uinput: power-on — ImageViewOn to TV ({CEC_TV})", flush=True)
+        print(f"launchscope-cec: power-on — ImageViewOn to TV ({CEC_TV})", flush=True)
         try:
             do_power_on()
-            print("cec-uinput: power-on done", flush=True)
+            print("launchscope-cec: power-on done", flush=True)
         except Exception as ex:
-            print(f"cec-uinput: power-on error: {ex}", flush=True)
+            print(f"launchscope-cec: power-on error: {ex}", flush=True)
     elif cmd == "set-source":
-        print(f"cec-uinput: set-source — ActiveSource {CEC_SOURCE_ADDR}", flush=True)
+        print(f"launchscope-cec: set-source — ActiveSource {CEC_SOURCE_ADDR}", flush=True)
         try:
             do_set_source()
-            print("cec-uinput: set-source done", flush=True)
+            print("launchscope-cec: set-source done", flush=True)
         except Exception as ex:
-            print(f"cec-uinput: set-source error: {ex}", flush=True)
+            print(f"launchscope-cec: set-source error: {ex}", flush=True)
     elif cmd == "standby":
-        print(f"cec-uinput: standby — AVR ({CEC_AVR})", flush=True)
+        print(f"launchscope-cec: standby — AVR ({CEC_AVR})", flush=True)
         try:
             do_standby()
-            print("cec-uinput: standby done", flush=True)
+            print("launchscope-cec: standby done", flush=True)
         except Exception as ex:
-            print(f"cec-uinput: standby error: {ex}", flush=True)
+            print(f"launchscope-cec: standby error: {ex}", flush=True)
     elif cmd == "activate":
-        print("cec-uinput: activate — ReportPhysicalAddress, DeviceVendorID, TextViewOn, ActiveSource", flush=True)
+        print("launchscope-cec: activate — ReportPhysicalAddress, DeviceVendorID, TextViewOn, ActiveSource", flush=True)
         try:
             do_report_physical_addr()
             do_device_vendor_id()
             do_power_on()
             do_set_source()
-            print("cec-uinput: activate done", flush=True)
+            print("launchscope-cec: activate done", flush=True)
         except Exception as ex:
-            print(f"cec-uinput: activate error: {ex}", flush=True)
+            print(f"launchscope-cec: activate error: {ex}", flush=True)
     else:
-        print(f"cec-uinput: unknown command '{cmd}'", flush=True)
+        print(f"launchscope-cec: unknown command '{cmd}'", flush=True)
 
 
 def socket_server():
@@ -329,7 +330,7 @@ def socket_server():
     os.chmod(SOCKET_PATH, 0o666)
     srv.listen(5)
     srv.settimeout(1)
-    print(f"cec-uinput: command socket at {SOCKET_PATH}", flush=True)
+    print(f"launchscope-cec: command socket at {SOCKET_PATH}", flush=True)
 
     while True:
         try:
@@ -342,30 +343,28 @@ def socket_server():
         except socket.timeout:
             continue
         except Exception as ex:
-            print(f"cec-uinput: socket error: {ex}", flush=True)
+            print(f"launchscope-cec: socket error: {ex}", flush=True)
 
 
 def main():
     global ui
 
-    print(f"cec-uinput: starting (tv={CEC_TV} avr={CEC_AVR} source={CEC_SOURCE_ADDR!r})", flush=True)
+    print(f"launchscope-cec: starting (tv={CEC_TV} avr={CEC_AVR} source={CEC_SOURCE_ADDR!r})", flush=True)
     ui = UInput(
         {e.EV_KEY: sorted(set(CEC_KEYMAP.values()))},
-        name="cec-uinput",
+        name="launchscope-cec",
         vendor=0x0001,
         product=0x0001,
         version=0x0111,
         bustype=0x03,
     )
-    print("cec-uinput: uinput device created", flush=True)
+    print("launchscope-cec: uinput device created", flush=True)
 
-    # Set our physical address directly from CEC_SOURCE_ADDR rather than
-    # using set_port() which relies on libcec querying the base device's
-    # physical address — unreliable when devices are in standby.
-    if CEC_SOURCE_ADDR:
-        cec.set_physical_addr(CEC_SOURCE_ADDR)
-    else:
-        cec.set_port(CEC_AVR if CEC_AVR is not None else CEC_TV, CEC_SOURCE_PORT)
+    if not CEC_SOURCE_ADDR:
+        print("launchscope-cec: error — CEC_SOURCE_ADDR is required. Run: echo 'scan' | cec-client -s -d 1", flush=True)
+        sys.exit(1)
+
+    cec.set_physical_addr(CEC_SOURCE_ADDR)
     cec.init()
     _build_phys_map()
     if CEC_VERBOSE:
@@ -373,12 +372,12 @@ def main():
     cec.add_callback(on_keypress, cec.EVENT_KEYPRESS)
     cec.add_callback(on_source_activated, cec.EVENT_ACTIVATED)
     cec.add_callback(on_command, cec.EVENT_COMMAND)
-    print("cec-uinput: libcec initialised", flush=True)
+    print("launchscope-cec: libcec initialised", flush=True)
 
     t = threading.Thread(target=socket_server, daemon=True)
     t.start()
 
-    print("cec-uinput: ready", flush=True)
+    print("launchscope-cec: ready", flush=True)
 
     try:
         threading.Event().wait()
@@ -393,21 +392,21 @@ def main():
 
 
 def on_log(event, level, time, message):
-    print(f"cec-uinput [libcec]: {message}", flush=True)
+    print(f"launchscope-cec [libcec]: {message}", flush=True)
 
 
 def on_keypress(event, keycode, duration):
     global pressed_key
     key = CEC_KEYMAP.get(keycode)
     if key is None:
-        print(f"cec-uinput: unmapped CEC 0x{keycode:02x}", flush=True)
+        print(f"launchscope-cec: unmapped CEC 0x{keycode:02x}", flush=True)
         return
     name = CEC_NAMES.get(keycode, f"0x{keycode:02x}")
     if duration == 0:
         ui.write(e.EV_KEY, key, 1)
         ui.syn()
         pressed_key = key
-        print(f"cec-uinput: press {name} → {e.KEY[key]}", flush=True)
+        print(f"launchscope-cec: press {name} → {e.KEY[key]}", flush=True)
     else:
         if pressed_key is not None:
             ui.write(e.EV_KEY, pressed_key, 0)
