@@ -406,16 +406,16 @@ in {
       fontPackage
     ];
 
-    xdg.configFile."launchscope/config.json".source = uiConfig;
-    xdg.configFile."launchscoped/config.json".source = daemonConfig;
-    xdg.configFile."launchscoped/apps.json".source = appsConfig;
-
-    # When api_key is set, write it as a store-backed symlink (immutable,
-    # like all other config files). If unset, the daemon auto-generates
-    # ~/.config/launchscoped/api_key on first boot and reuses it.
-    # To keep the key out of the store entirely, use api_key_file instead.
-    xdg.configFile."launchscoped/api_key" = lib.mkIf (cfg.settings.api.api_key != "") {
-      source = pkgs.writeText "launchscoped-api-key" cfg.settings.api.api_key;
+    xdg.configFile = {
+      "launchscope/config.json".source = uiConfig;
+      "launchscoped/config.json".source = daemonConfig;
+      "launchscoped/apps.json".source = appsConfig;
+    } // lib.optionalAttrs (cfg.settings.api.api_key != "") {
+      # When api_key is set, write it as a store-backed symlink (immutable,
+      # like all other config files). If unset, the daemon auto-generates
+      # ~/.config/launchscoped/api_key on first boot and reuses it.
+      # To keep the key out of the store entirely, use api_key_file instead.
+      "launchscoped/api_key".source = pkgs.writeText "launchscoped-api-key" cfg.settings.api.api_key;
     };
 
     systemd.user.services.launchscoped = {

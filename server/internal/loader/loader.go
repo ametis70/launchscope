@@ -109,15 +109,15 @@ func WriteJSONAtomic(path string, v any, perm fs.FileMode) error {
 	// Best-effort cleanup on any error path.
 	defer func() {
 		if tmpName != "" {
-			os.Remove(tmpName)
+			_ = os.Remove(tmpName) // best-effort cleanup
 		}
 	}()
 	if err := tmp.Chmod(perm); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return err
 	}
 	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		return err
 	}
 	if err := tmp.Close(); err != nil {

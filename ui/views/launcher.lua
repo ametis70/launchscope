@@ -11,7 +11,6 @@ local SoundModal = require("components.modals.sound_modal")
 local client = require("lib.client")
 local standalone = require("lib.standalone")
 local input = require("lib.input")
-local icons = require("lib.icons")
 local json = require("lib.json")
 local T = require("lib.theme")
 
@@ -104,7 +103,7 @@ function Launcher:isRunning()
     return self.process_mode == "standalone" and standalone.isRunning()
 end
 
-function Launcher:resize(w, h)
+function Launcher:resize(_, _)
     self._aux_def_key = nil -- force aux reposition at new window width
     self._close_btn = nil -- force close button reposition
     if self.list_state == "ready" then
@@ -445,7 +444,7 @@ end
 
 function Launcher:_buildAux()
     local ui = self.ui
-    local sw, _sh = love.graphics.getDimensions()
+    local sw, _ = love.graphics.getDimensions()
     local show_close = (self.process_mode == "standalone" and standalone.isRunning())
         or (self.process_mode == "daemon" and self._server_app_running)
 

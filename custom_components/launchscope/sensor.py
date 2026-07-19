@@ -11,11 +11,13 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .coordinator import LauncherCoordinator
 
-_DEVICE = lambda entry: {
-    "identifiers": {(DOMAIN, entry.entry_id)},
-    "name": "Launchscope",
-    "manufacturer": "Launchscope",
-}
+
+def _DEVICE(entry):
+    return {
+        "identifiers": {(DOMAIN, entry.entry_id)},
+        "name": "Launchscope",
+        "manufacturer": "Launchscope",
+    }
 
 
 async def async_setup_entry(

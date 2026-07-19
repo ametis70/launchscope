@@ -30,8 +30,8 @@ func newTestRouter(t *testing.T) (http.Handler, *process.Manager, *events.Bus) {
 	dir := t.TempDir()
 
 	// Config.
-	os.WriteFile(filepath.Join(dir, "config.json"),
-		[]byte(`{"api":{"port":8765,"api_key":"testkey"}}`), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "config.json"),
+		[]byte(`{"api":{"port":8765,"api_key":"testkey"}}`))
 	cfgLoader := config.NewLoader(dir)
 	if _, err := cfgLoader.Load(); err != nil {
 		t.Fatal(err)
@@ -41,7 +41,7 @@ func newTestRouter(t *testing.T) (http.Handler, *process.Manager, *events.Bus) {
 	appsJSON, _ := json.Marshal([]apps.App{
 		{ID: "kodi", Name: "Kodi", Exec: "/bin/sh -c 'sleep 60'"},
 	})
-	os.WriteFile(filepath.Join(dir, "apps.json"), appsJSON, 0o644)
+	mustWriteFile(t, filepath.Join(dir, "apps.json"), appsJSON)
 	appsLoader := apps.NewLoader(dir)
 	if _, err := appsLoader.Load(); err != nil {
 		t.Fatal(err)
@@ -55,6 +55,13 @@ func newTestRouter(t *testing.T) (http.Handler, *process.Manager, *events.Bus) {
 	return router, mgr, bus
 }
 
+func mustWriteFile(t *testing.T, path string, data []byte) {
+	t.Helper()
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func get(t *testing.T, handler http.Handler, path, apiKey string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -62,19 +69,6 @@ func get(t *testing.T, handler http.Handler, path, apiKey string) *httptest.Resp
 		req.Header.Set("X-Api-Key", apiKey)
 	}
 	// Simulate remote address so auth is applied.
-	req.RemoteAddr = "10.0.0.1:12345"
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, req)
-	return w
-}
-
-func post(t *testing.T, handler http.Handler, path, body, apiKey string) *httptest.ResponseRecorder {
-	t.Helper()
-	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	if apiKey != "" {
-		req.Header.Set("X-Api-Key", apiKey)
-	}
 	req.RemoteAddr = "10.0.0.1:12345"
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -209,7 +203,9 @@ func TestGetConfig_RedactsAPIKey(t *testing.T) {
 		t.Fatalf("code = %d", w.Code)
 	}
 	var cfg map[string]any
-	json.NewDecoder(w.Body).Decode(&cfg)
+	if err := json.NewDecoder(w.Body).Decode(&cfg); err != nil {
+		t.Fatal(err)
+	}
 	apiSection, _ := cfg["api"].(map[string]any)
 	if key, _ := apiSection["api_key"].(string); key != "" {
 		t.Errorf("api_key should be redacted, got %q", key)
@@ -220,7 +216,9 @@ func TestGetConfig_ReturnsPort(t *testing.T) {
 	router, _, _ := newTestRouter(t)
 	w := fromLocalhost(t, router, http.MethodGet, "/api/config", "")
 	var cfg map[string]any
-	json.NewDecoder(w.Body).Decode(&cfg)
+	if err := json.NewDecoder(w.Body).Decode(&cfg); err != nil {
+		t.Fatal(err)
+	}
 	apiSection, _ := cfg["api"].(map[string]any)
 	if port, _ := apiSection["port"].(float64); port != 8765 {
 		t.Errorf("port = %v, want 8765", port)
@@ -313,19 +311,23 @@ func TestWebSocket_Connect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("dial failed: %v", err)
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck
 }
 
 func TestWebSocket_ReceivesStateChangedEvent(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "config.json"),
-		[]byte(`{"api":{"port":8765,"api_key":"k"}}`), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "config.json"),
+		[]byte(`{"api":{"port":8765,"api_key":"k"}}`))
 	cfgLoader := config.NewLoader(dir)
-	cfgLoader.Load()
+	if _, err := cfgLoader.Load(); err != nil {
+		t.Fatal(err)
+	}
 
-	os.WriteFile(filepath.Join(dir, "apps.json"), []byte(`[]`), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "apps.json"), []byte(`[]`))
 	appsLoader := apps.NewLoader(dir)
-	appsLoader.Load()
+	if _, err := appsLoader.Load(); err != nil {
+		t.Fatal(err)
+	}
 
 	bus := events.NewBus()
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -342,8 +344,10 @@ func TestWebSocket_ReceivesStateChangedEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("dial failed: %v", err)
 	}
-	defer conn.Close()
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	defer conn.Close() //nolint:errcheck
+	if err := conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
 
 	// Start the manager — will publish StateChanged.
 	mgr.Start()
@@ -362,14 +366,18 @@ func TestWebSocket_ReceivesStateChangedEvent(t *testing.T) {
 
 func TestWebSocket_ReceivesAudioChangedEvent(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "config.json"),
-		[]byte(`{"api":{"port":8765,"api_key":"k"}}`), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "config.json"),
+		[]byte(`{"api":{"port":8765,"api_key":"k"}}`))
 	cfgLoader := config.NewLoader(dir)
-	cfgLoader.Load()
+	if _, err := cfgLoader.Load(); err != nil {
+		t.Fatal(err)
+	}
 
-	os.WriteFile(filepath.Join(dir, "apps.json"), []byte(`[]`), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "apps.json"), []byte(`[]`))
 	appsLoader := apps.NewLoader(dir)
-	appsLoader.Load()
+	if _, err := appsLoader.Load(); err != nil {
+		t.Fatal(err)
+	}
 
 	bus := events.NewBus()
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -384,8 +392,10 @@ func TestWebSocket_ReceivesAudioChangedEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("dial failed: %v", err)
 	}
-	defer conn.Close()
-	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	defer conn.Close() //nolint:errcheck
+	if err := conn.SetReadDeadline(time.Now().Add(3 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
 
 	// Publish an AudioChanged event directly.
 	bus.Publish(events.AudioChanged, audio.State{Volume: 0.5, Muted: false, SinkName: "test"})
@@ -401,14 +411,18 @@ func TestWebSocket_ReceivesAudioChangedEvent(t *testing.T) {
 
 func TestWebSocket_SubscriberCapRejects(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "config.json"),
-		[]byte(`{"api":{"port":8765,"api_key":"k"}}`), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "config.json"),
+		[]byte(`{"api":{"port":8765,"api_key":"k"}}`))
 	cfgLoader := config.NewLoader(dir)
-	cfgLoader.Load()
+	if _, err := cfgLoader.Load(); err != nil {
+		t.Fatal(err)
+	}
 
-	os.WriteFile(filepath.Join(dir, "apps.json"), []byte(`[]`), 0o644)
+	mustWriteFile(t, filepath.Join(dir, "apps.json"), []byte(`[]`))
 	appsLoader := apps.NewLoader(dir)
-	appsLoader.Load()
+	if _, err := appsLoader.Load(); err != nil {
+		t.Fatal(err)
+	}
 
 	bus := events.NewBus()
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -422,7 +436,7 @@ func TestWebSocket_SubscriberCapRejects(t *testing.T) {
 	var conns []*websocket.Conn
 	defer func() {
 		for _, c := range conns {
-			c.Close()
+			_ = c.Close()
 		}
 	}()
 
@@ -463,7 +477,7 @@ func TestWebSocket_DisconnectCleans(t *testing.T) {
 	}
 
 	// Close the connection and verify no panic or hang.
-	conn.Close()
+	_ = conn.Close()
 	cancel()
 
 	// Give the server goroutine time to clean up.

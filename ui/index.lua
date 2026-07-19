@@ -146,7 +146,7 @@ function M.draw()
             if not fo or fo() then
                 T.drawOverlay()
             end
-        elseif i < top and layer.focus_overlay and layer.focus_overlay() then
+        elseif i < top and layer.focus_overlay and layer.focus_overlay() then --luacheck: ignore
             -- A lower layer wants its own focus overlay, but only when it IS
             -- the effective top (nothing above it active). Already handled above.
             -- No action needed here.
