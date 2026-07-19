@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import pytest
+from tests.conftest import STATUS_APP_RUNNING, STATUS_IDLE
 
 from custom_components.launchscope.sensor import LaunchscopeCurrentAppSensor
-from tests.conftest import STATUS_IDLE, STATUS_APP_RUNNING
 
 
 def make_sensor(data):

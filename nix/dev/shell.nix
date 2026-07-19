@@ -94,41 +94,22 @@
 
   # Lint + format scripts
 
+  # ── Lint ──────────────────────────────────────────────────────────────── #
   ls-lint-server = pkgs.writeShellScriptBin "ls-lint-server" ''
     cd "$PWD/server" && exec golangci-lint run ./... "$@"
   '';
-  ls-fmt-server = pkgs.writeShellScriptBin "ls-fmt-server" ''
-    exec gofmt -w "$PWD/server"
-  '';
-
   ls-lint-ui = pkgs.writeShellScriptBin "ls-lint-ui" ''
     exec luacheck "$PWD/ui" --config "$PWD/.luacheckrc" "$@"
   '';
-  ls-fmt-ui = pkgs.writeShellScriptBin "ls-fmt-ui" ''
-    exec stylua "$PWD/ui" "$@"
-  '';
-
   ls-lint-cec = pkgs.writeShellScriptBin "ls-lint-cec" ''
     exec ruff check "$PWD/cec" "$@"
   '';
-  ls-fmt-cec = pkgs.writeShellScriptBin "ls-fmt-cec" ''
-    exec ruff format "$PWD/cec" "$@"
-  '';
-
   ls-lint-ha = pkgs.writeShellScriptBin "ls-lint-ha" ''
     exec ruff check "$PWD/homeassistant" "$PWD/custom_components" "$@"
   '';
-  ls-fmt-ha = pkgs.writeShellScriptBin "ls-fmt-ha" ''
-    exec ruff format "$PWD/homeassistant" "$PWD/custom_components" "$@"
-  '';
-
   ls-lint-nix = pkgs.writeShellScriptBin "ls-lint-nix" ''
     exec statix check "$PWD" "$@"
   '';
-  ls-fmt-nix = pkgs.writeShellScriptBin "ls-fmt-nix" ''
-    exec alejandra "$PWD" "$@"
-  '';
-
   ls-lint = pkgs.writeShellScriptBin "ls-lint" ''
     rc=0
     echo "==> server" && ls-lint-server || rc=1
@@ -139,13 +120,54 @@
     exit $rc
   '';
 
+  # ── Fix (auto-fix lint issues) ─────────────────────────────────────────── #
+  ls-fix-server = pkgs.writeShellScriptBin "ls-fix-server" ''
+    cd "$PWD/server" && exec golangci-lint run --fix ./... "$@"
+  '';
+  # ls-fix-ui: luacheck has no auto-fix; use ls-fmt-ui instead
+  ls-fix-cec = pkgs.writeShellScriptBin "ls-fix-cec" ''
+    exec ruff check --fix "$PWD/cec" "$@"
+  '';
+  ls-fix-ha = pkgs.writeShellScriptBin "ls-fix-ha" ''
+    exec ruff check --fix "$PWD/homeassistant" "$PWD/custom_components" "$@"
+  '';
+  ls-fix-nix = pkgs.writeShellScriptBin "ls-fix-nix" ''
+    exec statix fix "$PWD" "$@"
+  '';
+  ls-fix = pkgs.writeShellScriptBin "ls-fix" ''
+    rc=0
+    echo "==> server" && ls-fix-server || rc=1
+    echo "==> ui"     && ls-fmt-ui     || rc=1
+    echo "==> cec"    && ls-fix-cec    || rc=1
+    echo "==> ha"     && ls-fix-ha     || rc=1
+    echo "==> nix"    && ls-fix-nix    || rc=1
+    exit $rc
+  '';
+
+  # ── Format ────────────────────────────────────────────────────────────── #
+  ls-fmt-server = pkgs.writeShellScriptBin "ls-fmt-server" ''
+    exec gofmt -w "$PWD/server"
+  '';
+  ls-fmt-ui = pkgs.writeShellScriptBin "ls-fmt-ui" ''
+    exec stylua "$PWD/ui" "$@"
+  '';
+  ls-fmt-cec = pkgs.writeShellScriptBin "ls-fmt-cec" ''
+    exec ruff format "$PWD/cec" "$@"
+  '';
+  ls-fmt-ha = pkgs.writeShellScriptBin "ls-fmt-ha" ''
+    exec ruff format "$PWD/homeassistant" "$PWD/custom_components" "$@"
+  '';
+  ls-fmt-nix = pkgs.writeShellScriptBin "ls-fmt-nix" ''
+    exec alejandra "$PWD" "$@"
+  '';
   ls-fmt = pkgs.writeShellScriptBin "ls-fmt" ''
-    set -e
-    echo "==> server" && ls-fmt-server
-    echo "==> ui"     && ls-fmt-ui
-    echo "==> cec"    && ls-fmt-cec
-    echo "==> ha"     && ls-fmt-ha
-    echo "==> nix"    && ls-fmt-nix
+    rc=0
+    echo "==> server" && ls-fmt-server || rc=1
+    echo "==> ui"     && ls-fmt-ui     || rc=1
+    echo "==> cec"    && ls-fmt-cec    || rc=1
+    echo "==> ha"     && ls-fmt-ha     || rc=1
+    echo "==> nix"    && ls-fmt-nix    || rc=1
+    exit $rc
   '';
 in
   pkgs.mkShell {
@@ -201,6 +223,11 @@ in
       ls-fmt-ha
       ls-fmt-nix
       ls-fmt
+      ls-fix-server
+      ls-fix-cec
+      ls-fix-ha
+      ls-fix-nix
+      ls-fix
     ];
 
     env.LAUNCHSCOPE_FONT = devFontName;
@@ -238,6 +265,14 @@ in
       echo "  ls-lint-cec          ruff check (Python)"
       echo "  ls-lint-ha           ruff check (Python)"
       echo "  ls-lint-nix          statix (Nix)"
+      echo ""
+      echo "  Fix (auto-fix lint issues)"
+      echo "  ls-fix               fix all packages"
+      echo "  ls-fix-server        golangci-lint --fix (Go)"
+      echo "  ls-fix-cec           ruff check --fix (Python)"
+      echo "  ls-fix-ha            ruff check --fix (Python)"
+      echo "  ls-fix-nix           statix fix (Nix)"
+      echo "  (Lua: no auto-fix — use ls-fmt-ui)"
       echo ""
       echo "  Format"
       echo "  ls-fmt               format all packages"

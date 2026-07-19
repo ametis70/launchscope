@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 from homeassistant.components.media_player import MediaPlayerState
-
-from custom_components.launchscope.media_player import LaunchscopeMediaPlayer
 from tests.conftest import (
     APPS_LIST,
     STATUS_APP_RUNNING,
     STATUS_IDLE,
     make_response,
 )
+
+from custom_components.launchscope.media_player import LaunchscopeMediaPlayer
 
 
 def make_player(data, apps=None):
