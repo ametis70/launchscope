@@ -154,19 +154,3 @@ The output lists each device with its logical address (`device #N`) and physical
 
 - **Direct to TV** — `sourceAddr` = `X.0.0.0` where X is the HDMI port number on the TV
 - **Through AVR** — `sourceAddr` = `1.X.0.0` where X is the HDMI port number on the AVR (the AVR is always at port 1 on the TV)
-
-## Polkit — power actions
-
-On non-NixOS systems, grant the service user permission to shut down and suspend without a password:
-
-```javascript
-// /etc/polkit-1/rules.d/10-htpc-power.rules
-polkit.addRule(function(action, subject) {
-    if ((action.id == "org.freedesktop.login1.power-off" ||
-         action.id == "org.freedesktop.login1.reboot"   ||
-         action.id == "org.freedesktop.login1.suspend")  &&
-        subject.user == "htpc") {
-        return polkit.Result.YES;
-    }
-});
-```

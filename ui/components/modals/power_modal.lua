@@ -104,6 +104,12 @@ function PowerModal:update(inp)
     end
 end
 
+local SYSTEMCTL_ACTIONS = {
+    shutdown = "poweroff",
+    restart  = "reboot",
+    suspend  = "suspend",
+}
+
 function PowerModal:_confirm(item)
     local messages = {
         restart_service = "Restart the launchscope service?",
@@ -124,12 +130,18 @@ function PowerModal:_confirm(item)
         elseif item.id == "restart_service" then
             _G.index.popModal()   -- confirm
             _G.index.popModal()   -- power
-            -- Restart the user service; the daemon will relaunch the UI.
             os.execute("systemctl --user restart launchscoped 2>/dev/null &")
         else
             _G.index.popModal()   -- confirm
             _G.index.popModal()   -- power
-            client.power(item.id)
+            if self._standalone then
+                local arg = SYSTEMCTL_ACTIONS[item.id]
+                if arg then
+                    os.execute("systemctl " .. arg .. " 2>/dev/null &")
+                end
+            else
+                client.power(item.id)
+            end
         end
     end, self.ui))
 end
