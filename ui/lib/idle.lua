@@ -124,10 +124,10 @@ end
 -- Reset the idle timer. Call on every input event.
 -- When waking from blank, starts the grace period — the waking input is
 -- absorbed and not forwarded to the UI.
--- In cec mode, cecActivate is sent on every input event (throttled) since the
--- PC has no way to know if the display was turned off externally.
+-- In cec mode, cecActivate is only sent when the display is not showing us
+-- (TV off or wrong active source) — no point activating when already visible.
 function M.reset()
-    if _blank_mode == "cec" then
+    if _blank_mode == "cec" and not _cec_visible then
         cecActivateThrottled()
     end
     if _blanked then
