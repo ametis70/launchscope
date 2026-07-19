@@ -33,7 +33,7 @@ The Home Assistant integration covers cases where none of those input methods ar
 ## Components
 
 - **[server](server/)** — Go daemon (`launchscoped`) that owns the process slot, manages gamescope-wrapped apps, controls PipeWire audio, and exposes a REST + WebSocket API
-- **[ui](ui/)** — LÖVE2D frontend that displays the launcher menu and communicates with the daemon over HTTP
+- **[ui](ui/)** — LÖVE2D frontend that displays the launcher menu and communicates with the daemon over HTTP. Can also run standalone (without the daemon) nested inside an existing window manager, though the primary use case is the full daemon-managed DRM/gamescope session.
 - **[cec](cec/)** — Python bridge (`launchscope-cec`) that provides bidirectional HDMI-CEC integration: translates TV remote button presses into uinput keyboard events, sends CEC commands (power on, standby, set active source), and monitors the CEC bus for device power and source changes
 - **[homeassistant](homeassistant/)** — Custom Home Assistant integration for remote control and automation via the daemon API
 - **[nix](nix/)** — NixOS and Home Manager modules for declarative deployment

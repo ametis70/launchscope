@@ -9,14 +9,6 @@ LÖVE2D frontend for the launchscope launcher
 
 <br>
 
-| | |
-|:---:|:---:|
-| <img src="docs/img/launcher.png" width="400"> | <img src="docs/img/standalone.png" width="400"> |
-| <img src="docs/img/standalone-close.png" width="400"> | <img src="docs/img/power.png" width="400"> |
-| <img src="docs/img/volume.png" width="400"> | |
-
-<br>
-
 </div>
 
 ## Overview
@@ -74,3 +66,15 @@ ls-ui-standalone-gs  # nested_gamescope session, standalone process mode
 **Background shader** — adapted from a [Shadertoy shader](https://www.shadertoy.com/view/wdyczG) by hahnzhu.
 
 **Sound effects** — [Universal UI/Menu Soundpack](https://cyrex-studios.itch.io/universal-ui-soundpack) by Nathan Gibson (Cyrex Studios). CC BY 4.0.
+
+## Screenshots
+
+<div align="center">
+
+| | |
+|:---:|:---:|
+| <img src="docs/img/launcher.png" width="400"> | <img src="docs/img/standalone.png" width="400"> |
+| <img src="docs/img/standalone-close.png" width="400"> | <img src="docs/img/power.png" width="400"> |
+| <img src="docs/img/volume.png" width="400"> | |
+
+</div>

@@ -32,10 +32,13 @@ Custom Home Assistant integration for controlling and monitoring [launchscoped](
 |---|---|---|
 | Launchscope | `media_player` | Current app state, source selection, volume and mute control |
 | Current App | `sensor` | ID of the running app, or `idle` |
+| TV Power | `sensor` | TV power state reported by `launchscope-cec` |
+| AVR Power | `sensor` | AVR power state reported by `launchscope-cec` (unavailable if no AVR) |
+| CEC Active Source | `sensor` | Logical address of the current active CEC source |
 | Stop App | `button` | Stop the running app and return to the launcher (only available when an app is running) |
-| Turn On TV | `button` | Power on TV + AVR and set active source (`POST /api/cec/activate`) |
-| Power On | `button` | Power on TV + AVR without switching input (`POST /api/cec/power-on`) |
-| Set Active Source | `button` | Broadcast ActiveSource to switch AVR input to the host PC (`POST /api/cec/set-source`) |
+| Activate Launchscope | `button` | Power on TV + AVR and switch input to the host PC (`POST /api/cec/activate`) |
+| Turn On TV | `button` | Power on TV + AVR without switching input (`POST /api/cec/power-on`) |
+| Set as Active Source | `button` | Broadcast ActiveSource to switch AVR input to the host PC (`POST /api/cec/set-source`) |
 | Turn Off TV | `button` | Send the AVR to standby (`POST /api/cec/standby`) |
 
 The media player's source list reflects the app list from `GET /api/apps`. Selecting a source launches the corresponding app.
@@ -74,3 +77,11 @@ python3 -m venv homeassistant/.venv
 homeassistant/.venv/bin/pip install -r requirements-test.txt
 homeassistant/.venv/bin/pytest tests/
 ```
+
+## Screenshots
+
+<div align="center">
+
+<img src="docs/img/home-assistant.png" width="600">
+
+</div>
