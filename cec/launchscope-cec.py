@@ -116,7 +116,8 @@ CEC_NAMES = {
 }
 
 ui = None
-pressed_key = None
+_key_lock = threading.Lock()
+_pressed_key = None  # last key-down'd linux keycode, guarded by _key_lock
 
 # ── CEC state ─────────────────────────────────────────────────────────────── #
 _state_lock = threading.Lock()
@@ -218,7 +219,7 @@ def on_command(event, cmd):
 
 
 def push_state():
-    """POST current CEC state to the Go server."""
+    """POST current CEC state to the Go server (non-blocking, runs in a thread)."""
     with _state_lock:
         payload = {
             "tv_on": _tv_on,
@@ -226,20 +227,24 @@ def push_state():
             "active_source": _active_source,
             "is_active_source": _is_active_source,
         }
-    body = json.dumps(payload).encode()
-    headers = {"Content-Type": "application/json"}
-    if SERVER_API_KEY:
-        headers["X-Api-Key"] = SERVER_API_KEY
-    try:
-        req = urllib.request.Request(
-            f"{SERVER_URL}/api/cec/state",
-            data=body,
-            headers=headers,
-            method="POST",
-        )
-        urllib.request.urlopen(req, timeout=5)
-    except Exception as ex:
-        print(f"launchscope-cec: push_state error: {ex}", flush=True)
+
+    def _post():
+        body = json.dumps(payload).encode()
+        headers = {"Content-Type": "application/json"}
+        if SERVER_API_KEY:
+            headers["X-Api-Key"] = SERVER_API_KEY
+        try:
+            req = urllib.request.Request(
+                f"{SERVER_URL}/api/cec/state",
+                data=body,
+                headers=headers,
+                method="POST",
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as ex:
+            print(f"launchscope-cec: push_state error: {ex}", flush=True)
+
+    threading.Thread(target=_post, daemon=True).start()
 
 
 def parse_physical_addr(s):
@@ -432,22 +437,39 @@ def on_log(event, level, time, message):
 
 
 def on_keypress(event, keycode, duration):
-    global pressed_key
+    """Handle CEC key events.
+
+    libcec fires duration=0 for initial press and for every repeat while the
+    button is held (TVs typically repeat every ~400-500 ms). Duration>0 signals
+    release. Both press and repeat use duration=0 — they are indistinguishable
+    at the libcec level.
+
+    We emit a full press+release cycle on every duration=0 event. This means:
+      - One tap  → one key event (correct).
+      - Held key → a key event at CEC repeat rate (~400-500 ms), which is slow
+                   but unavoidable given the CEC protocol's repeat interval.
+
+    Duration>0 is a release-only marker; no uinput event is needed because we
+    already released after each press. We still clear pressed_key as a guard
+    against stuck keys (e.g. if a duration=0 was missed).
+    """
+    global _pressed_key
     key = CEC_KEYMAP.get(keycode)
     if key is None:
         print(f"launchscope-cec: unmapped CEC 0x{keycode:02x}", flush=True)
         return
     name = CEC_NAMES.get(keycode, f"0x{keycode:02x}")
-    if duration == 0:
-        ui.write(e.EV_KEY, key, 1)
-        ui.syn()
-        pressed_key = key
-        print(f"launchscope-cec: press {name} → {e.KEY[key]}", flush=True)
-    else:
-        if pressed_key is not None:
-            ui.write(e.EV_KEY, pressed_key, 0)
+    with _key_lock:
+        if duration == 0:
+            ui.write(e.EV_KEY, key, 1)
             ui.syn()
-            pressed_key = None
+            ui.write(e.EV_KEY, key, 0)
+            ui.syn()
+            _pressed_key = key
+            print(f"launchscope-cec: press {name} → {e.KEY[key]}", flush=True)
+        else:
+            # Release marker — key already released above, just clear state.
+            _pressed_key = None
 
 
 if __name__ == "__main__":
