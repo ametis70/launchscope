@@ -318,15 +318,6 @@ function _init()
     idle.init(cfg.idle)
     _G.idle = idle
 
-    if
-        cfg.process_mode == "daemon"
-        and cfg.idle
-        and cfg.idle.blank_mode == "cec"
-        and cfg.idle.cec_activate_on_start ~= false
-    then
-        client.cecActivate()
-    end
-
     if cfg.background then
         shader.load(cfg.background)
     end

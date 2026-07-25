@@ -22,7 +22,17 @@
 --
 -- Blank: runs blank_off / CEC standby once when blank_timeout elapses.
 --        runs blank_on / CEC activate when any input arrives while blanked.
---        In cec mode, also blanks when TV is off or host PC is not active source.
+-- In cec mode, also blanks when TV is off or host PC is not active source.
+-- State is unknown (nil) before the CEC bridge has observed any bus events.
+-- The poll reflects bridge state, which starts zeroed — indistinguishable from
+-- the TV genuinely being off. In unknown/not-visible state, any input triggers
+-- a throttled activate so the user can interact immediately. No immediate blank
+-- is issued while state is nil; the first poll result determines action.
+--
+-- cec_activate_on_start: when true (default), idle retries POST /api/cec/activate
+-- every poll cycle until the socket responds successfully, handling the case where
+-- launchscope-cec starts after the launcher. Stops retrying once activate succeeds
+-- or the poll confirms visibility (TV already on + correct source).
 --
 -- Wake grace: after waking from blank via input, input is blocked for
 -- WAKE_GRACE_DURATION seconds so the waking keypress is not forwarded to the UI.
@@ -71,7 +81,13 @@ local _blank_enabled = false
 -- CEC visibility polling (blank_mode = "cec" only)
 local _cec_poll_interval = 5.0
 local _cec_poll_t = 0
-local _cec_visible = true -- optimistic: assume visible until first poll
+-- nil = unknown (pre-first-CEC-bus-event), true = visible, false = not visible.
+-- Unknown is treated like "not visible" for activate-on-input purposes but
+-- does NOT trigger an immediate blank — we wait for the first poll result.
+local _cec_visible = nil
+-- When true, retry cecActivate every poll cycle until the socket responds
+-- successfully. Cleared once activate succeeds or state is confirmed visible.
+local _cec_activate_pending = false
 
 -- ── Helpers ───────────────────────────────────────────────────────────── --
 
@@ -113,7 +129,8 @@ function M.init(cfg)
     _blank_on = cfg.blank_on or DEFAULT_BLANK_ON
     _cec_poll_interval = tonumber(cfg.cec_poll_interval) or 5.0
     _cec_poll_t = _cec_poll_interval -- poll immediately on first update
-    _cec_visible = true
+    _cec_visible = nil -- unknown until bridge observes a CEC bus event
+    _cec_activate_pending = (_blank_mode == "cec") and (cfg.cec_activate_on_start ~= false)
     _idle_t = 0
     _blanked = false
     _wake_grace = 0
@@ -127,7 +144,10 @@ end
 -- In cec mode, cecActivate is only sent when the display is not showing us
 -- (TV off or wrong active source) — no point activating when already visible.
 function M.reset()
-    if _blank_mode == "cec" and not _cec_visible then
+    -- In cec mode, send activate when state is unknown (nil) or not visible (false).
+    -- Unknown happens before the first poll — we activate defensively so the user
+    -- can interact with the system immediately, matching the behaviour when blanked.
+    if _blank_mode == "cec" and _cec_visible ~= true then
         cecActivateThrottled()
     end
     if _blanked then
@@ -156,14 +176,30 @@ function M.update(dt)
         _cec_poll_t = _cec_poll_t + dt
         if _cec_poll_t >= _cec_poll_interval then
             _cec_poll_t = 0
+
+            -- Retry startup activate until the socket responds successfully.
+            -- Handles the launcher starting before launchscope-cec is ready.
+            if _cec_activate_pending then
+                local _, code = client.post("/api/cec/activate")
+                if code == 200 or code == 202 then
+                    _cec_activate_pending = false
+                end
+                -- On failure (socket not ready, 500, etc.) leave pending=true
+                -- and retry next poll cycle.
+            end
+
             local state, err = client.get("/api/cec/state")
             if not err then
                 local was_visible = _cec_visible
                 _cec_visible = (state.tv_on == true) and (state.is_active_source == true)
+                -- If already visible, no need to activate.
+                if _cec_visible then
+                    _cec_activate_pending = false
+                end
                 if _cec_visible and not was_visible then
                     -- TV turned on / source switched to PC externally — wake without grace.
                     wakeExternal()
-                elseif not _cec_visible and not _blanked then
+                elseif _cec_visible == false and not _blanked then
                     -- TV off or wrong source — blank immediately.
                     _blanked = true
                 end

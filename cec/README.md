@@ -11,6 +11,12 @@ HDMI-CEC bridge for [Pulse-Eight USB CEC adapters](https://www.pulse-eight.com/p
 
 </div>
 
+## Disclaimer
+
+This module was built based on personal experience with a specific CEC setup (Pulse-Eight USB adapter, AVR, and TV). CEC is notoriously inconsistent — the spec leaves a lot to manufacturer interpretation, and real-world behaviour varies significantly across TVs, AVRs, and adapters. Commands that work perfectly on one device may be silently ignored, partially handled, or behave differently on another.
+
+If something does not work as expected, the culprit could be a bug in this module or a quirk in a TV or AVR's CEC implementation. Verbose logging (`CEC_VERBOSE=1`) and a CEC bus scan (`echo 'scan' | cec-client -s -d 1`) are good starting points for diagnosis. Feel free to open a issue if you found something that works on your setup.
+
 ## Overview
 
 `launchscope-cec` maintains a persistent connection to a Pulse-Eight USB CEC adapter via [libcec](https://github.com/Pulse-Eight/libcec) and provides bidirectional HDMI-CEC integration with Launchscope:
@@ -23,12 +29,22 @@ HDMI-CEC bridge for [Pulse-Eight USB CEC adapters](https://www.pulse-eight.com/p
 
 `launchscope-cec` watches incoming CEC bus traffic to maintain the following state, pushed to `launchscoped` on every change:
 
-| Field | Source |
-|---|---|
-| `tv_on` | `ReportPowerStatus` (0x90) from TV / `Standby` (0x36) from TV |
-| `avr_on` | `SetSystemAudioMode` (0x72) from AVR (`0x01` = on, `0x00` = off) / TV standby implicitly powers off AVR |
-| `active_source` | `ActiveSource` (0x82) broadcast / `RoutingChange` (0x80) from AVR |
-| `is_active_source` | whether `active_source` is the host PC (logical address 1) |
+| Field              | Source                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| `tv_on`            | `ReportPowerStatus` (0x90) from TV / `Standby` (0x36) from TV                                           |
+| `avr_on`           | `SetSystemAudioMode` (0x72) from AVR (`0x01` = on, `0x00` = off) / TV standby implicitly powers off AVR |
+| `active_source`    | `ActiveSource` (0x82) broadcast / `RoutingChange` (0x80) from AVR                                       |
+| `is_active_source` | whether `active_source` is the host PC (logical address 1)                                              |
+
+### Activate-on-start trade-offs
+
+When `blank_mode = "cec"`, the launcher has no way to know the TV/AVR state at startup — the bridge only tracks changes it observes after it starts. A state poll before any CEC message has been received returns stale zeroed state (`tv_on: false`, `is_active_source: false`), which is indistinguishable from the TV genuinely being off.
+
+The `cec_activate_on_start` option controls what happens at startup:
+
+**`true` (default)** — The launcher retries `activate` every poll cycle until the socket responds successfully (handles the launcher starting before the CEC service is ready). The TV/AVR will power on as soon as the service is up. Downside: if the user has no way to remotely turn the display off (no CEC-capable remote, no sleep timer), the TV will stay on indefinitely.
+
+**`false`** — No activate is sent on startup. Display state is left as-is. Because the bridge starts blind, the launcher cannot distinguish "TV is already on" from "TV is off and no events have arrived yet". Any user input while in this unknown state sends a throttled activate automatically, so the user can wake the system by pressing a button — but if the TV was already on with the correct source, that first input still triggers an unnecessary activate.
 
 ## Dependencies
 
@@ -47,12 +63,12 @@ Two topologies are supported:
 
 All configuration is via environment variables:
 
-| Variable | Default | Description |
-|---|---|---|
-| `CEC_HAS_AVR` | `1` | Set to `1` if an AVR is present. Standby goes to AVR only (TV powers off via signal loss). Set to `0` for direct PC→TV with no AVR. The AVR logical address is always 5 per the CEC spec. |
-| `CEC_SOURCE_ADDR` | _(required)_ | Physical CEC address of the host PC, e.g. `1.6.0.0`. Run `echo 'scan' \| cec-client -s -d 1` to discover. |
-| `CEC_VERBOSE` | `0` | Set to `1` to enable verbose libcec logging. |
-| `LAUNCHSCOPE_SERVER_URL` | `http://127.0.0.1:8765` | URL of `launchscoped` for pushing CEC state. |
+| Variable                 | Default                 | Description                                                                                                                                                                               |
+| ------------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CEC_HAS_AVR`            | `1`                     | Set to `1` if an AVR is present. Standby goes to AVR only (TV powers off via signal loss). Set to `0` for direct PC→TV with no AVR. The AVR logical address is always 5 per the CEC spec. |
+| `CEC_SOURCE_ADDR`        | _(required)_            | Physical CEC address of the host PC, e.g. `1.6.0.0`. Run `echo 'scan' \| cec-client -s -d 1` to discover.                                                                                 |
+| `CEC_VERBOSE`            | `0`                     | Set to `1` to enable verbose libcec logging.                                                                                                                                              |
+| `LAUNCHSCOPE_SERVER_URL` | `http://127.0.0.1:8765` | URL of `launchscoped` for pushing CEC state.                                                                                                                                              |
 
 ## Socket commands
 
@@ -65,28 +81,28 @@ echo "set-source" | socat - UNIX-CONNECT:/run/launchscope-cec/cmd.sock
 echo "power-on"   | socat - UNIX-CONNECT:/run/launchscope-cec/cmd.sock
 ```
 
-| Command | Description |
-|---|---|
-| `activate` | `ReportPhysicalAddress` + `DeviceVendorID` + `TextViewOn` + `ActiveSource` — full wake + input switch |
-| `power-on` | `TextViewOn` to TV only — wake without switching input |
-| `set-source` | Broadcast `ActiveSource` — switch input without waking |
-| `standby` | Standby the AVR (or TV if no AVR). Skipped if host PC is not the active source. |
+| Command      | Description                                                                                           |
+| ------------ | ----------------------------------------------------------------------------------------------------- |
+| `activate`   | `ReportPhysicalAddress` + `DeviceVendorID` + `TextViewOn` + `ActiveSource` — full wake + input switch |
+| `power-on`   | `TextViewOn` to TV only — wake without switching input                                                |
+| `set-source` | Broadcast `ActiveSource` — switch input without waking                                                |
+| `standby`    | Standby the AVR (or TV if no AVR). Skipped if host PC is not the active source.                       |
 
 ## Key mapping
 
-| CEC code | Linux key |
-|---|---|
-| Select | `KEY_ENTER` |
-| Up / Down / Left / Right | `KEY_UP` / `KEY_DOWN` / `KEY_LEFT` / `KEY_RIGHT` |
-| Home | `KEY_HOME` |
-| Exit | `KEY_ESC` |
-| 0–9 | `KEY_0`–`KEY_9` |
-| Channel Up / Down | `KEY_CHANNELUP` / `KEY_CHANNELDOWN` |
-| Play/Pause | `KEY_PLAYPAUSE` |
-| Rewind / Fast Forward | `KEY_REWIND` / `KEY_FASTFORWARD` |
-| Previous / Next | `KEY_PREVIOUSSONG` / `KEY_NEXTSONG` |
+| CEC code                    | Linux key                                           |
+| --------------------------- | --------------------------------------------------- |
+| Select                      | `KEY_ENTER`                                         |
+| Up / Down / Left / Right    | `KEY_UP` / `KEY_DOWN` / `KEY_LEFT` / `KEY_RIGHT`    |
+| Home                        | `KEY_HOME`                                          |
+| Exit                        | `KEY_ESC`                                           |
+| 0–9                         | `KEY_0`–`KEY_9`                                     |
+| Channel Up / Down           | `KEY_CHANNELUP` / `KEY_CHANNELDOWN`                 |
+| Play/Pause                  | `KEY_PLAYPAUSE`                                     |
+| Rewind / Fast Forward       | `KEY_REWIND` / `KEY_FASTFORWARD`                    |
+| Previous / Next             | `KEY_PREVIOUSSONG` / `KEY_NEXTSONG`                 |
 | Blue / Red / Green / Yellow | `KEY_BLUE` / `KEY_RED` / `KEY_GREEN` / `KEY_YELLOW` |
-| Power | `KEY_POWER` |
+| Power                       | `KEY_POWER`                                         |
 
 ## Running
 
