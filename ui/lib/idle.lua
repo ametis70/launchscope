@@ -199,8 +199,11 @@ function M.update(dt)
                 if _cec_visible and not was_visible then
                     -- TV turned on / source switched to PC externally — wake without grace.
                     wakeExternal()
-                elseif _cec_visible == false and not _blanked then
+                elseif _cec_visible == false and not _blanked and not _cec_activate_pending then
                     -- TV off or wrong source — blank immediately.
+                    -- Skip while activate is pending: bridge state is zeroed until
+                    -- a CEC event arrives, so a false reading here is expected and
+                    -- should not trigger a blank before the activate has taken effect.
                     _blanked = true
                 end
             end
