@@ -42,6 +42,23 @@ import sys
 import threading
 import urllib.request
 
+
+def sd_notify(msg: str) -> None:
+    """Send a message to systemd's notification socket (sd_notify).
+    No-op when NOTIFY_SOCKET is not set (i.e. not running under systemd).
+    """
+    path = os.environ.get("NOTIFY_SOCKET")
+    if not path:
+        return
+    try:
+        # NOTIFY_SOCKET may be a path or an abstract socket (@-prefixed).
+        addr = "\0" + path[1:] if path.startswith("@") else path
+        with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as s:
+            s.connect(addr)
+            s.sendall(msg.encode())
+    except Exception as ex:
+        print(f"launchscope-cec: sd_notify failed: {ex}", flush=True)
+
 from evdev import UInput
 from evdev import ecodes as e
 
@@ -353,7 +370,7 @@ def handle_command(cmd):
         print(f"launchscope-cec: unknown command '{cmd}'", flush=True)
 
 
-def socket_server():
+def socket_server(ready: threading.Event):
     """Unix socket server for receiving commands."""
     try:
         os.unlink(SOCKET_PATH)
@@ -366,6 +383,7 @@ def socket_server():
     srv.listen(5)
     srv.settimeout(1)
     print(f"launchscope-cec: command socket at {SOCKET_PATH}", flush=True)
+    ready.set()
 
     while True:
         try:
@@ -415,9 +433,12 @@ def main():
     cec.add_callback(on_command, cec.EVENT_COMMAND)
     print("launchscope-cec: libcec initialised", flush=True)
 
-    t = threading.Thread(target=socket_server, daemon=True)
+    socket_ready = threading.Event()
+    t = threading.Thread(target=socket_server, args=(socket_ready,), daemon=True)
     t.start()
+    socket_ready.wait()
 
+    sd_notify("READY=1")
     print("launchscope-cec: ready", flush=True)
 
     try:

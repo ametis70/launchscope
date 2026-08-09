@@ -169,6 +169,8 @@ in {
       wantedBy = ["default.target"];
 
       serviceConfig = {
+        Type = "notify";
+        NotifyAccess = "main";
         ExecStart = "${cfg.cec.package}/bin/launchscope-cec";
         Restart = "on-failure";
         RestartSec = "3";
