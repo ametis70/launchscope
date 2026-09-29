@@ -23,6 +23,8 @@ Both files live in `$XDG_CONFIG_HOME/launchscoped/` (defaults to `~/.config/laun
 | `api.api_key` | string | — | API key for remote authentication |
 | `api.api_key_file` | string | — | Path to a file containing the API key (takes precedence over `api_key`) |
 | `cec.enabled` | bool | `false` | Enable HDMI-CEC control via `cec-uinput` |
+| `cec.initial_state_active` | bool | `true` | Assume the TV is on and this device is active until CEC events update state |
+| `cec.activate_on_start` | bool | `true` | Send a CEC activate command when the daemon starts |
 | `cec.switch_port` | int | `0` | HDMI port used by `POST /api/cec/switch-input` (1-based) |
 
 ### API key resolution

@@ -32,7 +32,12 @@ func NewRouter(
 	// Build CEC client if enabled.
 	var cecClient *cec.Client
 	if cfgLoader.Current().CEC.Enabled {
-		cecClient = cec.New()
+		cecClient = cec.New(cfgLoader.Current().CEC.InitialStateActive)
+		if cfgLoader.Current().CEC.ActivateOnStart {
+			if err := cecClient.Activate(); err != nil {
+				log.Warn("cec startup activate failed", "err", err)
+			}
+		}
 	}
 
 	mux := http.NewServeMux()

@@ -161,6 +161,8 @@ If neither field is set, the daemon auto-generates a random key on first boot an
 | Option | Default | Description |
 |---|---|---|
 | `cec.enabled` | `false` | Enable CEC control endpoints in the daemon API |
+| `cec.initial_state_active` | `true` | Assume the TV is on and this device is active until CEC events update state |
+| `cec.activate_on_start` | `true` | Send a CEC activate command when the daemon starts |
 | `cec.switch_port` | `0` | HDMI port used by `POST /api/cec/switch-input` (0 = disabled) |
 
 #### `programs.launchscope.settings.ui`

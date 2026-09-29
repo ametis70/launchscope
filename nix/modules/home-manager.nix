@@ -230,6 +230,19 @@ in {
           default = false;
           description = "Enable HDMI-CEC control via the launchscope-cec socket.";
         };
+        initial_state_active = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            Assume TV on and this device active until CEC bus events update state.
+            Set false to start with an unknown/inactive state.
+          '';
+        };
+        activate_on_start = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Send a CEC activate command when the daemon starts.";
+        };
       };
 
       ui = {

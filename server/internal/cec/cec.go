@@ -30,8 +30,18 @@ type Client struct {
 	state        State
 }
 
-// New creates a CEC client.
-func New() *Client { return &Client{} }
+// New creates a CEC client. When initialStateActive is true the initial state
+// is set optimistically to tv_on=true and is_active_source=true so that the first
+// /api/cec/state poll does not blank the UI before the bridge has observed any
+// CEC bus events. The bridge will push correct state once events arrive.
+func New(initialStateActive bool) *Client {
+	c := &Client{}
+	if initialStateActive {
+		c.state.TVOn = true
+		c.state.IsActiveSource = true
+	}
+	return c
+}
 
 // GetState returns the last-known CEC state.
 func (c *Client) GetState() State {

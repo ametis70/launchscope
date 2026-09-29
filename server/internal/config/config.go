@@ -24,7 +24,9 @@ type APIConfig struct {
 // When Enabled is true, the /api/cec/* endpoints are active and send
 // commands to the launchscope-cec Unix socket at /run/launchscope-cec/cmd.sock.
 type CECConfig struct {
-	Enabled bool `json:"enabled"`
+	Enabled            bool `json:"enabled"`
+	InitialStateActive bool `json:"initial_state_active"`
+	ActivateOnStart    bool `json:"activate_on_start"`
 }
 
 // defaults returns a Config with sane defaults applied.
@@ -34,7 +36,9 @@ func defaults() Config {
 			Port: 8765,
 		},
 		CEC: CECConfig{
-			Enabled: false,
+			Enabled:            false,
+			InitialStateActive: true,
+			ActivateOnStart:    true,
 		},
 	}
 }
