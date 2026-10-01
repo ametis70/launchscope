@@ -37,8 +37,14 @@ type Client struct {
 func New(initialStateActive bool) *Client {
 	c := &Client{}
 	if initialStateActive {
-		c.state.TVOn = true
-		c.state.IsActiveSource = true
+		avrOn := true
+		activeSource := 1 // this device's CEC logical address
+		c.state = State{
+			TVOn:           true,
+			AVROn:          &avrOn,
+			ActiveSource:   &activeSource,
+			IsActiveSource: true,
+		}
 	}
 	return c
 }
