@@ -139,6 +139,7 @@ _pressed_key = None  # last key-down'd linux keycode, guarded by _key_lock
 # ── CEC state ─────────────────────────────────────────────────────────────── #
 _state_lock = threading.Lock()
 _tv_on = False
+_tv_power_known = False
 _avr_on = False
 _active_source = None  # logical addr (int) of current active source, or None
 _is_active_source = False  # _active_source == OWN_LOGICAL
@@ -166,7 +167,7 @@ def on_source_activated(event, logical_addr, activated):
 
 def on_command(event, cmd):
     """Track active source and power state from incoming CEC commands."""
-    global _active_source, _is_active_source, _tv_on, _avr_on
+    global _active_source, _is_active_source, _tv_on, _tv_power_known, _avr_on
     opcode = cmd.get("opcode")
     initiator = cmd.get("initiator")
     params = cmd.get("parameters", b"")
@@ -174,6 +175,7 @@ def on_command(event, cmd):
     # TV power ON — ReportPowerStatus (0x90) from TV with params=0x00
     if opcode == 0x90 and initiator == CEC_TV and params and params[0] == 0x00:
         with _state_lock:
+            _tv_power_known = True
             if _tv_on:
                 return
             _tv_on = True
@@ -183,6 +185,7 @@ def on_command(event, cmd):
     # TV standby — Standby (0x36) broadcast from TV
     elif opcode == 0x36 and initiator == CEC_TV:
         with _state_lock:
+            _tv_power_known = True
             if not _tv_on and not _avr_on:
                 return
             _tv_on = False
@@ -236,8 +239,13 @@ def on_command(event, cmd):
 
 
 def push_state():
-    """POST current CEC state to the Go server (non-blocking, runs in a thread)."""
+    """POST current CEC state once TV power has been observed on the bus."""
     with _state_lock:
+        # AVR/source events can arrive before any TV power event. Posting the
+        # default _tv_on=False in those snapshots would erase launchscoped's
+        # optimistic initial state. Wait for an actual TV power/standby event.
+        if not _tv_power_known:
+            return
         payload = {
             "tv_on": _tv_on,
             "avr_on": _avr_on,
