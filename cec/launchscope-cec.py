@@ -310,11 +310,14 @@ def do_set_source():
         # audio control. Parameters are our physical address.
         if CEC_AVR is not None:
             cec.transmit(CEC_AVR, cec.CEC_OPCODE_SYSTEM_AUDIO_MODE_REQUEST, addr_bytes)
-    # Outgoing ActiveSource is not echoed back via EVENT_COMMAND — update state directly.
+    # Outgoing ActiveSource is not echoed back via EVENT_COMMAND, so keep our
+    # local source tracking in sync. Do not push a full snapshot here: the
+    # bridge may not yet have observed TV power status, and its default
+    # _tv_on=False would overwrite launchscoped's configured optimistic
+    # initial state. Bus events will push authoritative state as they arrive.
     with _state_lock:
         _active_source = OWN_LOGICAL
         _is_active_source = True
-    push_state()
 
 
 def do_standby():
