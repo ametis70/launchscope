@@ -109,7 +109,9 @@ function M.keypressed(key)
     if action then
         pressed[action] = true
         held[action] = true
+        return true
     end
+    return false
 end
 
 function M.keyreleased(key)
@@ -125,7 +127,9 @@ function M.gamepadpressed(joystick, button)
     if action then
         pressed[action] = true
         held[action] = true
+        return true
     end
+    return false
 end
 
 function M.gamepadreleased(joystick, button)
@@ -163,9 +167,11 @@ function M.gamepadaxis(joystick, axis, value)
     if action and active and not axisHeld[action] then
         axisHeld[action] = true
         pressed[action] = true
+        return true
     elseif action and not active then
         axisHeld[action] = false
     end
+    return false
 end
 
 function M.mousemoved(x, y)
