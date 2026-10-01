@@ -43,8 +43,8 @@ local GAMEPAD_BUTTON_MAP = {
     SETTINGS = { "start" },
 }
 
-local AXIS_THRESHOLD = 0.5
-local AXIS_RELEASE = AXIS_THRESHOLD * 0.6
+local AXIS_THRESHOLD = 0.8
+local AXIS_RELEASE = 0.1
 
 -- ── State ─────────────────────────────────────────────────────────────── --
 
@@ -141,37 +141,34 @@ end
 
 function M.gamepadaxis(joystick, axis, value)
     _device = "gamepad"
-    local action = nil
-    local active = false
-
+    local negative, positive
     if axis == "lefty" or axis == "righty" then
-        if value < -AXIS_THRESHOLD then
-            action, active = "UP", true
-        elseif value > AXIS_THRESHOLD then
-            action, active = "DOWN", true
-        elseif math.abs(value) < AXIS_RELEASE then
-            axisHeld["UP"] = false
-            axisHeld["DOWN"] = false
-        end
+        negative, positive = "UP", "DOWN"
     elseif axis == "leftx" or axis == "rightx" then
-        if value < -AXIS_THRESHOLD then
-            action, active = "LEFT", true
-        elseif value > AXIS_THRESHOLD then
-            action, active = "RIGHT", true
-        elseif math.abs(value) < AXIS_RELEASE then
-            axisHeld["LEFT"] = false
-            axisHeld["RIGHT"] = false
-        end
+        negative, positive = "LEFT", "RIGHT"
+    else
+        return false
     end
 
-    if action and active and not axisHeld[action] then
-        axisHeld[action] = true
-        pressed[action] = true
-        return true
-    elseif action and not active then
-        axisHeld[action] = false
+    -- Treat each physical axis like a digital control: one navigation step
+    -- when it leaves neutral, then no repeats until it returns to neutral.
+    -- Keep the latch per joystick+axis so another stick cannot release it.
+    local axisKey = tostring(joystick:getID()) .. ":" .. axis
+    local direction = value < -AXIS_THRESHOLD and -1 or value > AXIS_THRESHOLD and 1 or nil
+    if math.abs(value) < AXIS_RELEASE then
+        axisHeld[axisKey] = nil
+        return false
     end
-    return false
+    -- Once deflected, ignore further samples (including a sign flip) until
+    -- the stick comes back to neutral. This prevents noisy/reported midpoint
+    -- values from generating repeated navigation, regardless of active menu.
+    if not direction or axisHeld[axisKey] ~= nil then
+        return false
+    end
+
+    axisHeld[axisKey] = direction
+    pressed[direction < 0 and negative or positive] = true
+    return true
 end
 
 function M.mousemoved(x, y)
