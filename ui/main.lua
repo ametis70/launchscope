@@ -171,14 +171,14 @@ function love.keypressed(key)
     if _G.cursor then
         _G.cursor.hide()
     end
-    if _G.idle then
+    local handled = input.keypressed(key)
+    if handled and _G.idle then
         _G.idle.reset()
     end
     if _G.idle and _G.idle.isInputBlocked() then
         return
     end
     index.keypressed(key)
-    input.keypressed(key)
 end
 
 function love.keyreleased(key)
@@ -188,13 +188,13 @@ function love.gamepadpressed(j, b)
     if _G.cursor then
         _G.cursor.hide()
     end
-    if _G.idle then
+    local handled = input.gamepadpressed(j, b)
+    if handled and _G.idle then
         _G.idle.reset()
     end
     if _G.idle and _G.idle.isInputBlocked() then
         return
     end
-    input.gamepadpressed(j, b)
 end
 function love.gamepadreleased(j, b)
     input.gamepadreleased(j, b)
@@ -203,13 +203,13 @@ function love.gamepadaxis(j, a, v)
     if _G.cursor then
         _G.cursor.hide()
     end
-    if _G.idle then
+    local handled = input.gamepadaxis(j, a, v)
+    if handled and _G.idle then
         _G.idle.reset()
     end
     if _G.idle and _G.idle.isInputBlocked() then
         return
     end
-    input.gamepadaxis(j, a, v)
 end
 function love.mousemoved(x, y)
     if _G.cursor then
